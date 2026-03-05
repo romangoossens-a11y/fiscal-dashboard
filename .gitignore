@@ -1,6 +1,9 @@
 # Claude internal files
 .claude/
 
+# Local notes (contains API keys, personal notes)
+LOCAL_NOTES.md
+
 # Dev screenshots (not needed on GitHub)
 screenshots/
 

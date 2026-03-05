@@ -1,92 +1,43 @@
-# Fiscal Sustainability Dashboard
+# Fiscal Sustainability Dashboard — Claude Context
 
-## Purpose
-Interactive web dashboard analysing G10 fiscal sustainability. Hosted on GitHub Pages, shareable via URL. Data auto-updates weekly via GitHub Actions pulling from FRED + IMF public APIs. Based on the framework from `2025_11_17_Macro_Report_G10_Fiscal_Sustainability.tex`.
+## Project
+G10 Fiscal Sustainability Dashboard for Antigravity Macro Research.
+
+**Live URL:** https://romangoossens-a11y.github.io/fiscal-dashboard/fiscal_dashboard.html
+**GitHub repo:** https://github.com/romangoossens-a11y/fiscal-dashboard
+**Local URL:** http://localhost:8743/fiscal_dashboard.html (run `python -m http.server 8743` in this folder)
 
 ## Tech Stack
-- Frontend: Single `index.html` — Tailwind CSS v3 (CDN), Alpine.js (CDN), Chart.js (CDN)
-- Icons: Lucide via CDN
-- Font: Inter (Google Fonts)
-- Data: `data/fiscal_data.json` — fetched on page load (no backend)
-- Python: `scripts/fetch_data.py` — data pipeline (FRED + IMF DataMapper APIs)
-- Hosting: GitHub Pages; GitHub Actions for scheduled data refresh (every Monday)
+- Single HTML file: `fiscal_dashboard.html` — Tailwind CSS, Alpine.js, Chart.js (all via CDN)
+- Data: `data/fiscal_data.js` (loaded via script tag, works file://) + `data/fiscal_data.json` (fetched via http://)
+- Python pipeline: `scripts/fetch_data.py` — FRED API + IMF DataMapper
+- Hosting: GitHub Pages; auto data refresh every Monday via GitHub Actions
 
-## Project Structure
-```
-Fiscal sustainability dashboard/
-├── index.html               # Dashboard (table + chart) — main deliverable
-├── data/
-│   └── fiscal_data.json    # Auto-generated; do not edit manually
-├── scripts/
-│   └── fetch_data.py       # Run to refresh data: python scripts/fetch_data.py
-├── requirements.txt         # requests, pandas, fredapi
-├── .github/
-│   └── workflows/
-│       └── update_data.yml # Weekly GitHub Actions trigger
-└── .claude/rules/           # Project-specific Claude rules
-```
+## Key Technical Notes
+- **Chart instance** stored as closure variable `let _chart = null` inside `dashboard()` — NOT as Alpine reactive data. Alpine's proxy doesn't reliably persist assignments from outside event handlers (root cause of chart not updating bug).
+- **`computeDebtPath`** returns raw floats (no `.toFixed()` rounding). Display rounding handled by tooltip/end-label `.toFixed(1)` and y-axis tick `(+v).toFixed(1) + '%'`.
+- Sliders use `@input="sliderR = +$event.target.value; updateChart()"` — explicit value read before updateChart to avoid x-model timing issues.
+- `waitForChart()` polls until Alpine data + Chart.js + canvas are all ready before rendering.
+- `window.FISCAL_DATA` set by `data/fiscal_data.js`; `init()` prefers this over fetch().
 
-## Countries Covered (9)
-Spain, Switzerland, Italy, Japan, Canada, United Kingdom, Germany, United States, France
-(G10 scope from the 2025 Macro Report; ordered most → least sustainable by Fiscal Gap)
-
-## Core Math — Nominal Terms Throughout
-```
-Debt dynamics:        d_t = d_{t-1} × (1 + r/100) / (1 + g/100) − pb
-Stabilising balance:  pb* = (r − g) / 100 × d_{t-1}        [result in % GDP]
-Fiscal Gap:           gap = pb − pb*                         [+ = sustainable]
-```
-- `r`  = nominal 10Y government bond yield (%)
-- `g`  = nominal GDP growth ≈ real GDP growth + CPI inflation (%)
-- `d`  = gross government debt as % of GDP (prior year)
-- `pb` = general government primary balance as % of GDP (+ = surplus, − = deficit)
-
-See `.claude/rules/fiscal_calculations.md` for full detail and sign conventions.
-
-## Data Sources
-| Variable | Source | Series/Indicator |
-|---|---|---|
-| 10Y nominal yields | FRED API | See `.claude/rules/data_pipeline.md` |
-| Gross debt/GDP | IMF Fiscal Monitor | `GGXWDG_NGDP` |
-| Primary balance | IMF Fiscal Monitor | `GGXONLB_NGDP` |
-| Real GDP growth | IMF WEO | `NGDP_RPCH` |
-| CPI inflation | IMF WEO | `PCPIPCH` |
-
-IMF vintage: October 2025 (biannual: April + October). Yields: daily from FRED (latest obs).
-
-## Updating Data
-```bash
-export FRED_API_KEY=your_key_here
+## Data Pipeline
+```powershell
+# Refresh live data (PowerShell)
+$env:FRED_API_KEY="your_key_here"
+cd 'path\to\Fiscal sustainability dashboard'
 python scripts/fetch_data.py
-# Commit data/fiscal_data.json
 ```
-GitHub Actions runs this automatically every Monday 8am UTC using `secrets.FRED_API_KEY`.
+- FRED: 10Y yields — USA `DGS10` (daily), others `IRLTLT01XXM156N` (monthly)
+- IMF primary balance indicator: `GGXONLB_G01_GDP_PT` (changed from old `GGXONLB_NGDP`)
+- `PROJECTION_YEAR = date.today().year` — auto-set to current year at run time
 
-## Key Design Rules
-- Table sorted most → least sustainable by Fiscal Gap (descending)
-- Two row groups: "Sustainable (Gap ≥ 0)" / "Unsustainable (Gap < 0)"
-- All values nominal — clearly labelled in the UI
-- r and g cells are inline-editable; changes recalculate pb*, gap, and chart client-side
-- Chart: single debt trajectory for selected country, 10-year horizon
-- Chart sliders adjust r and g for what-if analysis (independent of table baseline)
-- Primary balance in chart is fixed at country's current value (displayed as a label)
+## Fiscal Framework (Nominal Terms)
+- `g = real_growth + inflation` (nominal growth)
+- `pb* = (r/100 - g/100) × debt` (debt-stabilising primary balance)
+- `fiscal_gap = pb - pb*` (positive = sustainable)
+- `d_t = d_{t-1} × (1 + r/100) / (1 + g/100) - pb` (debt dynamics for chart)
 
-## Current Implementation Status (March 2026)
-
-**Built and working:**
-- `fiscal_dashboard.html` — fully functional; double-click to open, no server needed
-- `data/fiscal_data.js` — inline data (enables `file://` opening without fetch)
-- `data/fiscal_data.json` — same data for `http://` serving
-- `scripts/fetch_data.py` — FRED + IMF pipeline, writes both data files
-- `.github/workflows/update_data.yml` — auto weekly data refresh via GitHub Actions
-- All `.claude/rules/` files written
-
-**Seeded data vintage:** IMF WEO Oct 2025 / FRED Nov 2025 (values from 2025 Macro Report)
-**Live data:** Not yet fetched — needs FRED API key (free at fred.stlouisfed.org)
-
-**Immediate next steps:**
-1. `set FRED_API_KEY=<key>` then `python scripts/fetch_data.py` to pull live data
-2. Push folder to GitHub repo → enable Pages → add `FRED_API_KEY` secret → share URL
-
-## Reference
-Original analysis: `2025_11_17_Macro_Report_G10_Fiscal_Sustainability.tex`
+## Code Conventions
+- Font weights: `font-semibold` (600), `font-bold` (700), `font-medium` (500) — not `font-600` etc.
+- All Tailwind classes; no custom CSS except minor inline styles
+- Alpine.js `x-data="dashboard()"` on main container; all state in `dashboard()` closure
