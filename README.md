@@ -3,7 +3,7 @@
 Interactive web dashboard analysing fiscal sustainability for 9 major economies.
 Based on the framework from the Antigravity Macro Research November 2025 report.
 
-**Live site:** https://romangoossens-a11y.github.io/fiscal-dashboard/fiscal_dashboard.html
+**Live site:** https://romangoossens-a11y.github.io/fiscal-dashboard/
 
 ---
 
@@ -43,7 +43,7 @@ Spain · Switzerland · Italy · Japan · Canada · United Kingdom · Germany ·
 
 ```
 fiscal-dashboard/
-├── fiscal_dashboard.html     ← the dashboard
+├── index.html                ← the dashboard
 ├── data/
 │   ├── fiscal_data.json      ← auto-generated data (http:// hosting)
 │   └── fiscal_data.js        ← same data as JS variable (file:// opening)

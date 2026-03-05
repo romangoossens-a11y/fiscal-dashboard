@@ -3,12 +3,12 @@
 ## Project
 G10 Fiscal Sustainability Dashboard for Antigravity Macro Research.
 
-**Live URL:** https://romangoossens-a11y.github.io/fiscal-dashboard/fiscal_dashboard.html
+**Live URL:** https://romangoossens-a11y.github.io/fiscal-dashboard/
 **GitHub repo:** https://github.com/romangoossens-a11y/fiscal-dashboard
-**Local URL:** http://localhost:8743/fiscal_dashboard.html (run `python -m http.server 8743` in this folder)
+**Local URL:** http://localhost:8743/index.html (run `python -m http.server 8743` in this folder)
 
 ## Tech Stack
-- Single HTML file: `fiscal_dashboard.html` — Tailwind CSS, Alpine.js, Chart.js (all via CDN)
+- Single HTML file: `index.html` — Tailwind CSS, Alpine.js, Chart.js (all via CDN)
 - Data: `data/fiscal_data.js` (loaded via script tag, works file://) + `data/fiscal_data.json` (fetched via http://)
 - Python pipeline: `scripts/fetch_data.py` — FRED API + IMF DataMapper
 - Hosting: GitHub Pages; auto data refresh every Monday via GitHub Actions
