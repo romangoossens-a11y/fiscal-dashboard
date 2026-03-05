@@ -1,0 +1,18 @@
+# Claude internal files
+.claude/
+
+# Dev screenshots (not needed on GitHub)
+screenshots/
+
+# Source documents (not part of the web app)
+*.pdf
+*.tex
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
