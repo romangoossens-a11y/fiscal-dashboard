@@ -441,28 +441,28 @@
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
                 Debt Ratio ✎<br><span
-                  class="font-normal text-cyan-600/60 dark:text-cyan-500/60">(d<sub>t−1</sub>)</span></th>
+                  class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(d<sub>t−1</sub>)</span></th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                10Y Rate ✎<br><span class="font-normal text-cyan-600/60 dark:text-cyan-500/60">(r)</span></th>
+                10Y Rate ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(r)</span></th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                Nom. Growth ✎<br><span class="font-normal text-cyan-600/60 dark:text-cyan-500/60">(g)</span></th>
+                Nom. Growth ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(g)</span></th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide">
                 r − g</th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                Primary Bal ✎<br><span class="font-normal text-cyan-600/60 dark:text-cyan-500/60">(pb)</span></th>
+                Primary Bal ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(pb)</span></th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Stabilising Bal<br><span class="font-normal text-slate-400 dark:text-slate-500">(pb*)</span></th>
+                Stabilising Bal<br><span class="font-normal text-slate-500 dark:text-slate-400">(pb*)</span></th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Fiscal Gap<br><span class="font-normal text-slate-400 dark:text-slate-500">(pp GDP)</span></th>
+                Fiscal Gap<br><span class="font-normal text-slate-500 dark:text-slate-400">(pp GDP)</span></th>
               <th
                 class="text-right px-3 sm:px-6 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Debt 10Y<br><span class="font-normal text-slate-400 dark:text-slate-500">(% GDP)</span></th>
+                Debt 10Y<br><span class="font-normal text-slate-500 dark:text-slate-400">(% GDP)</span></th>
             </tr>
           </thead>
           <tbody>
@@ -530,13 +530,13 @@
                       @click.stop="startEdit(c, 'pb')" x-text="fmtSigned(c.pb) + '%'"></span>
                   </template>
                 </td>
-                <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-400"
+                <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-300"
                   x-text="fmtSigned(c.pb_star) + '%'"></td>
                 <td class="px-3 sm:px-4 py-3 text-right font-bold text-base"
                   :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
                   x-text="fmtSigned(c.fiscal_gap) + '%'"></td>
-                <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-500 whitespace-nowrap"
-                  :class="debt10Y(c) > c.debt ? 'text-rose-400/70 dark:text-rose-500/60' : 'text-emerald-500/70 dark:text-emerald-500/60'">
+                <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                  :class="debt10Y(c) > c.debt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
                   <span x-text="fmt(debt10Y(c)) + '%'"></span>
                   <span class="text-[10px] ml-0.5" x-text="debt10Y(c) > c.debt ? '↑' : '↓'"></span>
                 </td>
@@ -607,13 +607,13 @@
                       @click.stop="startEdit(c, 'pb')" x-text="fmtSigned(c.pb) + '%'"></span>
                   </template>
                 </td>
-                <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-400"
+                <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-300"
                   x-text="fmtSigned(c.pb_star) + '%'"></td>
                 <td class="px-3 sm:px-4 py-3 text-right font-bold text-base"
                   :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
                   x-text="fmtSigned(c.fiscal_gap) + '%'"></td>
-                <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-500 whitespace-nowrap"
-                  :class="debt10Y(c) > c.debt ? 'text-rose-400/70 dark:text-rose-500/60' : 'text-emerald-500/70 dark:text-emerald-500/60'">
+                <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                  :class="debt10Y(c) > c.debt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
                   <span x-text="fmt(debt10Y(c)) + '%'"></span>
                   <span class="text-[10px] ml-0.5" x-text="debt10Y(c) > c.debt ? '↑' : '↓'"></span>
                 </td>
@@ -961,8 +961,8 @@
           gradient.addColorStop(0, isRising ? (isDark ? 'rgba(248,113,113,0.15)' : 'rgba(220,38,38,0.1)') : (isDark ? 'rgba(52,211,153,0.15)' : 'rgba(5,150,105,0.1)'));
           gradient.addColorStop(1, 'transparent');
 
-          const gridColor = isDark ? 'rgba(100,116,139,0.12)' : 'rgba(148,163,184,0.15)';
-          const tickColor = isDark ? '#64748b' : '#94a3b8';
+          const gridColor = isDark ? 'rgba(100,116,139,0.15)' : 'rgba(148,163,184,0.15)';
+          const tickColor = isDark ? '#94a3b8' : '#64748b';
 
           _chart = new Chart(ctx, {
             type: 'line',
