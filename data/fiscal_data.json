@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-04-06",
-  "data_vintage": "IMF WEO Oct 2025 | FRED 2026-04-06",
+  "last_updated": "2026-04-13",
+  "data_vintage": "IMF WEO Oct 2025 | FRED 2026-04-13",
   "projection_year": 2026,
   "countries": [
     {
@@ -91,12 +91,12 @@
       "name": "United States",
       "iso3": "USA",
       "debt": 128.7,
-      "r": 4.31,
+      "r": 4.29,
       "g": 4.5,
-      "r_g": -0.19,
+      "r_g": -0.21,
       "pb": -4.06,
-      "pb_star": -0.24,
-      "fiscal_gap": -3.82,
+      "pb_star": -0.27,
+      "fiscal_gap": -3.79,
       "sustainable": false
     },
     {
