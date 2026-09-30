@@ -36,11 +36,11 @@ Tick items off as they land.
 
 ## Phase 2. Front end hardening
 
-- [ ] Self host pinned Alpine and Chart.js, precompiled Tailwind CSS
-- [ ] Load failure banner, per value stale badge, yield month shown
-- [ ] All labels from the JSON, chart start year from `projection_year`
-- [ ] Merge the duplicated table row markup, remove the `waitForChart` polling
-- [ ] Optional headless smoke test in CI
+- [x] Self host pinned Alpine and Chart.js, precompiled Tailwind CSS
+- [x] Load failure banner, per value stale badge, yield month shown
+- [x] All labels from the JSON, chart start year from `projection_year`
+- [x] Merge the duplicated table row markup, remove the `waitForChart` polling
+- [x] Optional headless smoke test in CI
 
 ## Phase 3. Features
 

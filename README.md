@@ -41,6 +41,10 @@ Data refreshes every Monday via GitHub Actions. If a source fails, the last good
 pip install -r requirements-dev.txt
 python -m pytest -q
 python scripts/fetch_data.py
+
+# Front end assets, after changing classes or CSS
+npm install
+npm run build
 ```
 
 ## Countries
@@ -51,7 +55,8 @@ Spain · Switzerland · Italy · Japan · Canada · United Kingdom · Germany ·
 
 ```
 fiscal-dashboard/
-├── index.html                ← the dashboard
+├── index.html                ← the dashboard markup
+├── assets/                   ← app.js, compiled app.css, self hosted vendor files and fonts
 ├── data/
 │   ├── fiscal_data.json      ← auto-generated data (http:// hosting)
 │   ├── fiscal_data.js        ← same data as JS variable (file:// opening)

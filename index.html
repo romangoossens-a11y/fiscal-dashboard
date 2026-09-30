@@ -7,358 +7,25 @@
   <title>G10 Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Interactive G10 fiscal sustainability dashboard with debt trajectory simulations, scenario analysis, and live data from FRED and IMF." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="data/fiscal_data.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="assets/app.css" />
   <script>
     // Apply saved theme before paint to avoid flash
-    if (localStorage.getItem('theme') === 'light') {
-      document.documentElement.classList.remove('dark');
-    }
-
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          colors: {
-            brand: { 50: '#ecfeff', 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2', 800: '#155e75' },
-            surface: {
-              50: '#f8fafc',
-              100: '#f1f5f9',
-              800: '#1e293b',
-              850: '#172032',
-              900: '#0f172a',
-              950: '#020617',
-            }
-          }
-        }
+    try {
+      if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.classList.remove('dark');
       }
-    }
+    } catch (e) { /* storage blocked: keep the default dark theme */ }
   </script>
-  <style>
-    [x-cloak] {
-      display: none !important;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      font-feature-settings: 'tnum' 1;
-    }
-
-    /* Dark scrollbar */
-    .dark ::-webkit-scrollbar {
-      height: 6px;
-      width: 6px;
-    }
-
-    .dark ::-webkit-scrollbar-track {
-      background: #1e293b;
-    }
-
-    .dark ::-webkit-scrollbar-thumb {
-      background: #475569;
-      border-radius: 3px;
-    }
-
-    .dark ::-webkit-scrollbar-thumb:hover {
-      background: #64748b;
-    }
-
-    /* Editable cell highlight */
-    .editable-cell {
-      cursor: pointer;
-      position: relative;
-      border-bottom: 1.5px dashed currentColor;
-      opacity: 0.85;
-      transition: all 0.2s ease;
-    }
-
-    .editable-cell:hover {
-      opacity: 1;
-      border-bottom-color: #22d3ee;
-    }
-
-    .dark .editable-cell:hover {
-      color: #22d3ee !important;
-    }
-
-    .editable-cell:hover {
-      color: #0891b2 !important;
-    }
-
-    /* Table input */
-    .table-input {
-      background: transparent;
-      border: 1.5px solid #22d3ee;
-      border-radius: 6px;
-      padding: 2px 6px;
-      width: 68px;
-      text-align: right;
-      font-size: 0.875rem;
-      font-family: 'Inter', sans-serif;
-      font-feature-settings: 'tnum' 1;
-      outline: none;
-      color: inherit;
-    }
-
-    .table-input:focus {
-      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
-    }
-
-    /* Custom range slider */
-    input[type=range] {
-      -webkit-appearance: none;
-      appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      background: #94a3b8;
-      cursor: pointer;
-      outline: none;
-    }
-
-    .dark input[type=range] {
-      background: #475569;
-    }
-
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #0891b2;
-      border: 2px solid #fff;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-    }
-
-    .dark input[type=range]::-webkit-slider-thumb {
-      background: #22d3ee;
-      border-color: #0f172a;
-      box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
-    }
-
-    /* Firefox */
-    input[type=range]::-moz-range-track {
-      height: 6px;
-      border-radius: 3px;
-      background: #94a3b8;
-    }
-
-    .dark input[type=range]::-moz-range-track {
-      background: #475569;
-    }
-
-    input[type=range]::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #0891b2;
-      border: 2px solid #fff;
-    }
-
-    .dark input[type=range]::-moz-range-thumb {
-      background: #22d3ee;
-      border-color: #0f172a;
-    }
-
-    /* Pipeline flag marker */
-    .flag-dot {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      margin-left: 4px;
-      border-radius: 50%;
-      background: #f59e0b;
-      vertical-align: middle;
-      cursor: help;
-    }
-
-    /* Section divider */
-    .section-divider td {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 8px 24px;
-    }
-
-    .dark .section-divider td {
-      background: #0f172a;
-      color: #64748b;
-    }
-
-    .section-divider td {
-      background: #f1f5f9;
-      color: #64748b;
-    }
-
-    /* Row animations */
-    .fade-in {
-      animation: fadeIn 0.5s ease both;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Selected row accent */
-    .row-selected {
-      position: relative;
-    }
-
-    .dark .row-selected {
-      background: rgba(34, 211, 238, 0.06) !important;
-    }
-
-    .row-selected {
-      background: rgba(8, 145, 178, 0.06) !important;
-    }
-
-    .row-selected td:first-child::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      border-radius: 0 2px 2px 0;
-    }
-
-    .dark .row-selected td:first-child::before {
-      background: #22d3ee;
-    }
-
-    .row-selected td:first-child::before {
-      background: #0891b2;
-    }
-
-    /* Glass card */
-    .glass-card {
-      border-radius: 12px;
-      overflow: hidden;
-      transition: box-shadow 0.3s ease;
-    }
-
-    .dark .glass-card {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(51, 65, 85, 0.6);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-    }
-
-    .glass-card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
-    }
-
-    .dark .glass-card:hover {
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    }
-
-    .glass-card:hover {
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-
-    /* Metrics panel */
-    .dark .metrics-panel {
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid rgba(51, 65, 85, 0.5);
-    }
-
-    .metrics-panel {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-    }
-
-    /* Sticky country column */
-    @media (max-width: 1023px) {
-      .sticky-col {
-        position: sticky;
-        left: 0;
-        z-index: 2;
-      }
-
-      .dark .sticky-col {
-        background: inherit;
-      }
-
-      .sticky-col {
-        background: inherit;
-      }
-    }
-
-    /* Pulsing dot */
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
-      }
-
-      50% {
-        opacity: 0.7;
-        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-      }
-    }
-
-    /* Theme toggle button */
-    .theme-toggle {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      border: none;
-    }
-
-    .dark .theme-toggle {
-      background: rgba(51, 65, 85, 0.5);
-      color: #fbbf24;
-    }
-
-    .dark .theme-toggle:hover {
-      background: rgba(51, 65, 85, 0.8);
-    }
-
-    .theme-toggle {
-      background: #f1f5f9;
-      color: #475569;
-    }
-
-    .theme-toggle:hover {
-      background: #e2e8f0;
-    }
-  </style>
+  <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
+  <script defer src="assets/vendor/chart.umd.js"></script>
+  <script defer src="data/fiscal_data.js"></script>
+  <script defer src="assets/app.js"></script>
+  <script defer src="assets/vendor/alpine.min.js"></script>
 </head>
 
 <body
   class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-300"
-  x-data="dashboard()" x-init="init()" x-cloak>
+  x-data="dashboard()" x-cloak>
 
   <!-- ── Header ── -->
   <header
@@ -383,9 +50,10 @@
             <span class="w-2 h-2 rounded-full bg-cyan-500 inline-block"></span>
             IMF
           </span>
-          <span
-            class="text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[10px] font-medium">
-            <span x-text="lastUpdated || '—'"></span>
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-medium"
+            :class="isStale ? 'text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60' : 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800'"
+            :title="isStale ? 'The weekly refresh has not run for more than 10 days' : 'Date of the last data refresh'">
+            <span x-text="(isStale ? 'Stale, ' : 'Data as of ') + (lastUpdated || '—')"></span>
           </span>
         </div>
         <!-- Theme toggle -->
@@ -408,6 +76,13 @@
   </header>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
+
+    <!-- ── Load failure banner ── -->
+    <div x-show="loadError"
+      class="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 rounded-xl px-4 py-3 text-sm text-rose-800 dark:text-rose-300">
+      <strong>Data could not be loaded.</strong> The table and chart are unavailable
+      (<span x-text="loadError"></span>). Try reloading the page.
+    </div>
 
     <!-- ── Notice bar ── -->
     <div
@@ -456,7 +131,8 @@
                   class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(d<sub>t−1</sub>)</span></th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                10Y Rate ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(r)</span></th>
+                10Y Rate ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80"
+                  x-text="typicalMonth ? '(r, ' + monthLabel(typicalMonth) + ' avg)' : '(r)'">(r)</span></th>
               <th
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
                 Nom. Growth ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(g)</span></th>
@@ -477,169 +153,90 @@
                 Debt 10Y<br><span class="font-normal text-slate-500 dark:text-slate-400">(% GDP)</span></th>
             </tr>
           </thead>
-          <tbody>
-            <!-- Sustainable section -->
-            <template x-if="sustainableCountries.length > 0">
+          <!-- One tbody per group: sustainable first, then unsustainable -->
+          <template x-for="group in groups" :key="group.key">
+            <tbody>
               <tr class="section-divider">
                 <td colspan="9">
                   <span class="inline-flex items-center gap-1.5"><span
-                      class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span> Sustainable Trajectory (Gap ≥
-                    0)</span>
+                      class="w-1.5 h-1.5 rounded-full inline-block" :class="group.dot"></span>
+                    <span x-text="group.label"></span></span>
                 </td>
               </tr>
-            </template>
-            <template x-for="(c, idx) in sustainableCountries" :key="c.iso3">
-              <tr
-                class="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
-                :class="selectedCountry?.iso3 === c.iso3 ? 'row-selected' : ''" @click="selectCountryFromTable(c)">
-                <td class="px-4 sm:px-6 py-3 font-semibold text-slate-900 dark:text-white sticky-col" x-text="c.name">
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'debt')" @keydown.enter="commitEdit(c, 'debt')"
-                      @keydown.escape="cancelEdit()" @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt')">
-                    <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'debt')"
-                      x-text="fmt(c.debt) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'debt')" :title="flagText(c, 'debt')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'r'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'r')" @keydown.enter="commitEdit(c, 'r')" @keydown.escape="cancelEdit()"
-                      @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'r')">
-                    <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'r')"
-                      x-text="fmt(c.r) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'r')" :title="flagText(c, 'r')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'g'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'g')" @keydown.enter="commitEdit(c, 'g')" @keydown.escape="cancelEdit()"
-                      @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'g')">
-                    <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'g')"
-                      x-text="fmt(c.g) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'g')" :title="flagText(c, 'g')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right font-medium"
-                  :class="c.r_g < 0 ? 'text-emerald-600 dark:text-emerald-400' : c.r_g > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'"
-                  x-text="fmtSigned(c.r_g) + '%'"></td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'pb')" @keydown.enter="commitEdit(c, 'pb')" @keydown.escape="cancelEdit()"
-                      @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb')">
-                    <span class="editable-cell font-medium"
-                      :class="c.pb > 0 ? 'text-emerald-700 dark:text-emerald-400' : c.pb < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500'"
-                      @click.stop="startEdit(c, 'pb')" x-text="fmtSigned(c.pb) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'pb')" :title="flagText(c, 'pb')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-300"
-                  x-text="fmtSigned(c.pb_star) + '%'"></td>
-                <td class="px-3 sm:px-4 py-3 text-right font-bold text-base"
-                  :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
-                  x-text="fmtSigned(c.fiscal_gap) + '%'"></td>
-                <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"
-                  :class="debt10Y(c) > c.debt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
-                  <span x-text="fmt(debt10Y(c)) + '%'"></span>
-                  <span class="text-[10px] ml-0.5" x-text="debt10Y(c) > c.debt ? '↑' : '↓'"></span>
-                </td>
-              </tr>
-            </template>
-
-            <!-- Unsustainable section -->
-            <template x-if="unsustainableCountries.length > 0">
-              <tr class="section-divider">
-                <td colspan="9">
-                  <span class="inline-flex items-center gap-1.5"><span
-                      class="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block"></span> Unsustainable Trajectory (Gap
-                    &lt; 0)</span>
-                </td>
-              </tr>
-            </template>
-            <template x-for="(c, idx) in unsustainableCountries" :key="c.iso3">
-              <tr
-                class="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
-                :class="selectedCountry?.iso3 === c.iso3 ? 'row-selected' : ''" @click="selectCountryFromTable(c)">
-                <td class="px-4 sm:px-6 py-3 font-semibold text-slate-900 dark:text-white sticky-col" x-text="c.name">
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'debt')" @keydown.enter="commitEdit(c, 'debt')"
-                      @keydown.escape="cancelEdit()" @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt')">
-                    <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'debt')"
-                      x-text="fmt(c.debt) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'debt')" :title="flagText(c, 'debt')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'r'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'r')" @keydown.enter="commitEdit(c, 'r')" @keydown.escape="cancelEdit()"
-                      @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'r')">
-                    <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'r')"
-                      x-text="fmt(c.r) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'r')" :title="flagText(c, 'r')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'g'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'g')" @keydown.enter="commitEdit(c, 'g')" @keydown.escape="cancelEdit()"
-                      @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'g')">
-                    <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'g')"
-                      x-text="fmt(c.g) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'g')" :title="flagText(c, 'g')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right font-medium"
-                  :class="c.r_g < 0 ? 'text-emerald-600 dark:text-emerald-400' : c.r_g > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'"
-                  x-text="fmtSigned(c.r_g) + '%'"></td>
-                <td class="px-3 sm:px-4 py-3 text-right">
-                  <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb'">
-                    <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                      @blur="commitEdit(c, 'pb')" @keydown.enter="commitEdit(c, 'pb')" @keydown.escape="cancelEdit()"
-                      @click.stop x-init="$nextTick(() => $el.focus())" />
-                  </template>
-                  <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb')">
-                    <span class="editable-cell font-medium"
-                      :class="c.pb > 0 ? 'text-emerald-700 dark:text-emerald-400' : c.pb < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500'"
-                      @click.stop="startEdit(c, 'pb')" x-text="fmtSigned(c.pb) + '%'"></span>
-                  </template>
-                  <span class="flag-dot" x-show="flagText(c, 'pb')" :title="flagText(c, 'pb')"></span>
-                </td>
-                <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-300"
-                  x-text="fmtSigned(c.pb_star) + '%'"></td>
-                <td class="px-3 sm:px-4 py-3 text-right font-bold text-base"
-                  :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
-                  x-text="fmtSigned(c.fiscal_gap) + '%'"></td>
-                <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"
-                  :class="debt10Y(c) > c.debt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
-                  <span x-text="fmt(debt10Y(c)) + '%'"></span>
-                  <span class="text-[10px] ml-0.5" x-text="debt10Y(c) > c.debt ? '↑' : '↓'"></span>
-                </td>
-              </tr>
-            </template>
-          </tbody>
+              <template x-for="c in group.countries" :key="c.iso3">
+                <tr
+                  class="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
+                  :class="selectedCountry?.iso3 === c.iso3 ? 'row-selected' : ''" @click="selectCountryFromTable(c)">
+                  <td class="px-4 sm:px-6 py-3 font-semibold text-slate-900 dark:text-white sticky-col" x-text="c.name">
+                  </td>
+                  <td class="px-3 sm:px-4 py-3 text-right">
+                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt'">
+                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
+                        @blur="commitEdit(c, 'debt')" @keydown.enter="commitEdit(c, 'debt')"
+                        @keydown.escape="cancelEdit()" @click.stop x-init="$nextTick(() => $el.focus())" />
+                    </template>
+                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt')">
+                      <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'debt')"
+                        x-text="fmt(c.debt) + '%'"></span>
+                    </template>
+                    <span class="flag-dot" x-show="flagText(c, 'debt')" :title="flagText(c, 'debt')"></span>
+                  </td>
+                  <td class="px-3 sm:px-4 py-3 text-right">
+                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'r'">
+                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
+                        @blur="commitEdit(c, 'r')" @keydown.enter="commitEdit(c, 'r')" @keydown.escape="cancelEdit()"
+                        @click.stop x-init="$nextTick(() => $el.focus())" />
+                    </template>
+                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'r')">
+                      <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'r')"
+                        x-text="fmt(c.r) + '%'"></span>
+                    </template>
+                    <span class="flag-dot" x-show="flagText(c, 'r')" :title="flagText(c, 'r')"></span>
+                    <div class="text-[10px] text-amber-600 dark:text-amber-400" x-show="c.r_month && c.r_month !== typicalMonth"
+                      x-text="monthLabel(c.r_month)"></div>
+                  </td>
+                  <td class="px-3 sm:px-4 py-3 text-right">
+                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'g'">
+                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
+                        @blur="commitEdit(c, 'g')" @keydown.enter="commitEdit(c, 'g')" @keydown.escape="cancelEdit()"
+                        @click.stop x-init="$nextTick(() => $el.focus())" />
+                    </template>
+                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'g')">
+                      <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'g')"
+                        x-text="fmt(c.g) + '%'"></span>
+                    </template>
+                    <span class="flag-dot" x-show="flagText(c, 'g')" :title="flagText(c, 'g')"></span>
+                  </td>
+                  <td class="px-3 sm:px-4 py-3 text-right font-medium"
+                    :class="c.r_g < 0 ? 'text-emerald-600 dark:text-emerald-400' : c.r_g > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'"
+                    x-text="fmtSigned(c.r_g) + '%'"></td>
+                  <td class="px-3 sm:px-4 py-3 text-right">
+                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb'">
+                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
+                        @blur="commitEdit(c, 'pb')" @keydown.enter="commitEdit(c, 'pb')" @keydown.escape="cancelEdit()"
+                        @click.stop x-init="$nextTick(() => $el.focus())" />
+                    </template>
+                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb')">
+                      <span class="editable-cell font-medium"
+                        :class="c.pb > 0 ? 'text-emerald-700 dark:text-emerald-400' : c.pb < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500'"
+                        @click.stop="startEdit(c, 'pb')" x-text="fmtSigned(c.pb) + '%'"></span>
+                    </template>
+                    <span class="flag-dot" x-show="flagText(c, 'pb')" :title="flagText(c, 'pb')"></span>
+                  </td>
+                  <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-300"
+                    x-text="fmtSigned(c.pb_star) + '%'"></td>
+                  <td class="px-3 sm:px-4 py-3 text-right font-bold text-base"
+                    :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
+                    x-text="fmtSigned(c.fiscal_gap) + '%'"></td>
+                  <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                    :class="debt10Y(c) > c.debt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
+                    <span x-text="fmt(debt10Y(c)) + '%'"></span>
+                    <span class="text-[10px] ml-0.5" x-text="debt10Y(c) > c.debt ? '↑' : '↓'"></span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </template>
         </table>
       </div>
 
@@ -776,340 +373,6 @@
 
   </main>
 
-  <script>
-    function dashboard() {
-      let _chart = null;   // stored outside Alpine proxy so assignments persist
-      return {
-        // State
-        allCountries: [],
-        originalCountries: [],
-        lastUpdated: null,
-        dataVintage: null,
-        projectionYear: null,
-        imfLabel: null,
-        dataStatus: [],
-        selectedCountry: null,
-        sliderR: 4.0,
-        sliderG: 3.0,
-        editingCell: null,
-        editValue: 0,
-        hasEdits: false,
-        chartFinalDebt: null,
-        isDark: document.documentElement.classList.contains('dark'),
-
-        // Computed
-        get sustainableCountries() {
-          return this.allCountries.filter(c => c.fiscal_gap >= 0);
-        },
-        get unsustainableCountries() {
-          return this.allCountries.filter(c => c.fiscal_gap < 0);
-        },
-
-        // Theme toggle
-        toggleTheme() {
-          this.isDark = !this.isDark;
-          document.documentElement.classList.toggle('dark', this.isDark);
-          localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
-          // Recreate chart with new theme colours
-          if (_chart) { _chart.destroy(); _chart = null; }
-          this.updateChart();
-        },
-
-        // Initialise
-        async init() {
-          try {
-            const data = window.FISCAL_DATA
-              ? window.FISCAL_DATA
-              : await (await fetch('data/fiscal_data.json')).json();
-            this.allCountries = data.countries.map(c => ({ ...c }));
-            this.originalCountries = data.countries.map(c => ({ ...c }));
-            this.lastUpdated = data.last_updated || null;
-            this.dataVintage = data.data_vintage || null;
-            this.projectionYear = data.projection_year || null;
-            this.imfLabel = data.imf?.vintage_label || null;
-            this.dataStatus = data.data_status || [];
-
-            if (this.allCountries.length > 0) {
-              this.selectedCountry = this.allCountries[0];
-              this.sliderR = this.allCountries[0].r;
-              this.sliderG = this.allCountries[0].g;
-              window._dashboardReady = this;
-            }
-          } catch (e) {
-            console.error('Failed to load fiscal_data.json:', e);
-          }
-        },
-
-        // Debt 10Y calculation for table column
-        debt10Y(c) {
-          const path = this.computeDebtPath(c.debt, c.r, c.g, c.pb, 10);
-          return path[path.length - 1];
-        },
-
-        // Country selection
-        selectCountry(c) {
-          this.selectedCountry = c;
-          this.sliderR = c.r;
-          this.sliderG = c.g;
-          setTimeout(() => this.updateChart(), 100);
-        },
-        selectCountryFromTable(c) {
-          this.selectCountry(c);
-        },
-        selectCountryByIso(iso3) {
-          const c = this.allCountries.find(c => c.iso3 === iso3);
-          if (c) this.selectCountry(c);
-        },
-
-        // Sliders
-        resetSliders() {
-          if (this.selectedCountry) {
-            this.sliderR = this.selectedCountry.r;
-            this.sliderG = this.selectedCountry.g;
-            this.updateChart();
-          }
-        },
-
-        // Inline editing
-        startEdit(c, field) {
-          this.editingCell = { iso3: c.iso3, field };
-          this.editValue = c[field];
-        },
-        commitEdit(c, field) {
-          if (this.editingCell?.iso3 !== c.iso3 || this.editingCell?.field !== field) return;
-          const newVal = parseFloat(this.editValue);
-          if (!isNaN(newVal) && newVal !== c[field]) {
-            c[field] = newVal;
-            this.recompute(c);
-            this.hasEdits = true;
-            if (this.selectedCountry?.iso3 === c.iso3) {
-              if (field === 'r') this.sliderR = newVal;
-              if (field === 'g') this.sliderG = newVal;
-              this.updateChart();
-            }
-          }
-          this.editingCell = null;
-        },
-        cancelEdit() {
-          this.editingCell = null;
-        },
-
-        // Recompute derived fields
-        recompute(c) {
-          c.r_g = +(c.r - c.g).toFixed(2);
-          c.pb_star = +((c.r / 100 - c.g / 100) * c.debt).toFixed(2);
-          c.fiscal_gap = +(c.pb - c.pb_star).toFixed(2);
-          c.sustainable = c.fiscal_gap >= 0;
-          this.allCountries.sort((a, b) => b.fiscal_gap - a.fiscal_gap);
-        },
-
-        // Sync slider values back to selected country table row
-        syncSliderToTable() {
-          if (!this.selectedCountry) return;
-          this.selectedCountry.r = +this.sliderR.toFixed(2);
-          this.selectedCountry.g = +this.sliderG.toFixed(2);
-          this.recompute(this.selectedCountry);
-          this.hasEdits = true;
-        },
-
-        resetEdits() {
-          this.allCountries = this.originalCountries.map(c => ({ ...c }));
-          this.hasEdits = false;
-          if (this.selectedCountry) {
-            const fresh = this.allCountries.find(c => c.iso3 === this.selectedCountry.iso3);
-            if (fresh) this.selectCountry(fresh);
-          }
-        },
-
-        // Formatting
-        fmt(v) {
-          return v === null || v === undefined ? '—' : parseFloat(v).toFixed(1);
-        },
-        // Flags raised by the pipeline for one displayed field. g covers its
-        // two IMF components.
-        flagText(c, field) {
-          const fields = field === 'g' ? ['real_growth', 'inflation'] : [field];
-          return (c.flags || []).filter(f => fields.includes(f.field)).map(f => f.message).join(' | ');
-        },
-        fmtSigned(v) {
-          if (v === null || v === undefined) return '—';
-          const n = parseFloat(v);
-          return (n >= 0 ? '+' : '') + n.toFixed(1);
-        },
-
-        // Debt trajectory
-        computeDebtPath(startDebt, r, g, pb, years = 10) {
-          const path = [startDebt];
-          let d = startDebt;
-          for (let t = 1; t <= years; t++) {
-            d = d * (1 + r / 100) / (1 + g / 100) - pb;
-            path.push(d);
-          }
-          return path;
-        },
-
-        // Chart
-        updateChart() {
-          if (!this.selectedCountry) return;
-
-          const isDark = document.documentElement.classList.contains('dark');
-          const startDebt = this.selectedCountry.debt;
-          const pb = this.selectedCountry.pb;
-          const r = this.sliderR;
-          const g = this.sliderG;
-          const baseYear = new Date().getFullYear();
-          const years = Array.from({ length: 11 }, (_, i) => String(baseYear + i));
-          const debtPath = this.computeDebtPath(startDebt, r, g, pb);
-          const finalDebt = debtPath[debtPath.length - 1];
-          this.chartFinalDebt = finalDebt;
-
-          const isRising = finalDebt > startDebt;
-          const lineColor = isRising
-            ? (isDark ? '#f87171' : '#dc2626')
-            : (isDark ? '#34d399' : '#059669');
-
-          const ctx = document.getElementById('debtChart') || this.$refs.debtChart;
-          if (!ctx) { console.warn('debtChart canvas not found'); return; }
-          if (typeof Chart === 'undefined') { console.warn('Chart.js not loaded'); return; }
-
-          // Update existing chart
-          if (_chart) {
-            const ds = _chart.data.datasets[0];
-            ds.data.splice(0, ds.data.length, ...debtPath);
-            ds.borderColor = lineColor;
-            // Update gradient
-            const chartCtx = ctx.getContext('2d');
-            const gradient = chartCtx.createLinearGradient(0, 0, 0, 360);
-            gradient.addColorStop(0, isRising ? (isDark ? 'rgba(248,113,113,0.15)' : 'rgba(220,38,38,0.1)') : (isDark ? 'rgba(52,211,153,0.15)' : 'rgba(5,150,105,0.1)'));
-            gradient.addColorStop(1, 'transparent');
-            ds.backgroundColor = gradient;
-            // Update grid/tick colours for theme
-            const gridColor = isDark ? 'rgba(100,116,139,0.12)' : 'rgba(148,163,184,0.15)';
-            const tickColor = isDark ? '#64748b' : '#94a3b8';
-            _chart.options.scales.x.grid.color = gridColor;
-            _chart.options.scales.y.grid.color = gridColor;
-            _chart.options.scales.x.ticks.color = tickColor;
-            _chart.options.scales.y.ticks.color = tickColor;
-            _chart.update('none');
-            return;
-          }
-
-          // Create gradient
-          const chartCtx = ctx.getContext('2d');
-          const gradient = chartCtx.createLinearGradient(0, 0, 0, 360);
-          gradient.addColorStop(0, isRising ? (isDark ? 'rgba(248,113,113,0.15)' : 'rgba(220,38,38,0.1)') : (isDark ? 'rgba(52,211,153,0.15)' : 'rgba(5,150,105,0.1)'));
-          gradient.addColorStop(1, 'transparent');
-
-          const gridColor = isDark ? 'rgba(100,116,139,0.15)' : 'rgba(148,163,184,0.15)';
-          const tickColor = isDark ? '#94a3b8' : '#64748b';
-
-          _chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: years,
-              datasets: [{
-                label: 'Debt/GDP',
-                data: debtPath,
-                borderColor: lineColor,
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0,
-                pointHoverRadius: 6,
-                pointHoverBackgroundColor: lineColor,
-                pointHoverBorderColor: isDark ? '#0f172a' : '#ffffff',
-                pointHoverBorderWidth: 2,
-                borderWidth: 3,
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: { duration: 300, easing: 'easeOutCubic' },
-              layout: { padding: { right: 56, top: 8, bottom: 4 } },
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  backgroundColor: isDark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
-                  titleColor: isDark ? '#e2e8f0' : '#1e293b',
-                  bodyColor: isDark ? '#94a3b8' : '#64748b',
-                  borderColor: isDark ? '#334155' : '#e2e8f0',
-                  borderWidth: 1,
-                  titleFont: { family: 'Inter', size: 12, weight: '600' },
-                  bodyFont: { family: 'Inter', size: 13 },
-                  padding: 12,
-                  cornerRadius: 8,
-                  displayColors: false,
-                  callbacks: {
-                    title: (items) => items[0].label,
-                    label: (ctx) => `Debt/GDP: ${ctx.parsed.y.toFixed(1)}%`,
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  grid: { color: gridColor, drawBorder: false },
-                  ticks: { font: { family: 'Inter', size: 11 }, color: tickColor },
-                  border: { display: false },
-                },
-                y: {
-                  grid: { color: gridColor, drawBorder: false },
-                  border: { display: false },
-                  ticks: {
-                    callback: (v) => (+v).toFixed(1) + '%',
-                    font: { family: 'Inter', size: 11 },
-                    color: tickColor,
-                  }
-                }
-              }
-            },
-            plugins: [{
-              id: 'endLabel',
-              afterDatasetDraw(chart) {
-                const { ctx, data } = chart;
-                const dataset = data.datasets[0];
-                const meta = chart.getDatasetMeta(0);
-                const lastPoint = meta.data[meta.data.length - 1];
-                if (!lastPoint) return;
-
-                const finalVal = dataset.data[dataset.data.length - 1];
-                const text = finalVal.toFixed(1) + '%';
-                const x = lastPoint.x + 8;
-                const y = lastPoint.y;
-
-                ctx.save();
-                // Draw pill background
-                const metrics = ctx.measureText(text);
-                const pw = metrics.width + 12;
-                const ph = 22;
-                ctx.fillStyle = isDark ? 'rgba(15,23,42,0.8)' : 'rgba(255,255,255,0.9)';
-                ctx.beginPath();
-                ctx.roundRect(x - 4, y - ph / 2, pw, ph, 6);
-                ctx.fill();
-                ctx.strokeStyle = dataset.borderColor;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                ctx.font = '600 12px Inter, sans-serif';
-                ctx.fillStyle = dataset.borderColor;
-                ctx.textBaseline = 'middle';
-                ctx.fillText(text, x + 2, y);
-                ctx.restore();
-              }
-            }]
-          });
-        }
-      };
-    }
-    // Standalone chart initialiser
-    (function waitForChart() {
-      const canvas = document.getElementById('debtChart');
-      if (!canvas || typeof Chart === 'undefined' || !window._dashboardReady) {
-        return setTimeout(waitForChart, 80);
-      }
-      window._dashboardReady.updateChart();
-    })();
-  </script>
 </body>
 
 </html>

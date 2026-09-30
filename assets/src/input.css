@@ -1,0 +1,358 @@
+/* Source for assets/app.css. Rebuild with `npm run build`. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('fonts/inter-latin-300-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('fonts/inter-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/inter-latin-700-normal.woff2') format('woff2');
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Dark scrollbar */
+.dark ::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Editable cell highlight */
+.editable-cell {
+  cursor: pointer;
+  position: relative;
+  border-bottom: 1.5px dashed currentColor;
+  opacity: 0.85;
+  transition: all 0.2s ease;
+}
+
+.editable-cell:hover {
+  opacity: 1;
+  border-bottom-color: #22d3ee;
+}
+
+.dark .editable-cell:hover {
+  color: #22d3ee !important;
+}
+
+.editable-cell:hover {
+  color: #0891b2 !important;
+}
+
+/* Table input */
+.table-input {
+  background: transparent;
+  border: 1.5px solid #22d3ee;
+  border-radius: 6px;
+  padding: 2px 6px;
+  width: 68px;
+  text-align: right;
+  font-size: 0.875rem;
+  font-family: 'Inter', sans-serif;
+  font-feature-settings: 'tnum' 1;
+  outline: none;
+  color: inherit;
+}
+
+.table-input:focus {
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+}
+
+/* Custom range slider */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #94a3b8;
+  cursor: pointer;
+  outline: none;
+}
+
+.dark input[type=range] {
+  background: #475569;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #0891b2;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.dark input[type=range]::-webkit-slider-thumb {
+  background: #22d3ee;
+  border-color: #0f172a;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+}
+
+/* Firefox */
+input[type=range]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #94a3b8;
+}
+
+.dark input[type=range]::-moz-range-track {
+  background: #475569;
+}
+
+input[type=range]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0891b2;
+  border: 2px solid #fff;
+}
+
+.dark input[type=range]::-moz-range-thumb {
+  background: #22d3ee;
+  border-color: #0f172a;
+}
+
+/* Pipeline flag marker */
+.flag-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: #f59e0b;
+  vertical-align: middle;
+  cursor: help;
+}
+
+/* Section divider */
+.section-divider td {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 24px;
+}
+
+.dark .section-divider td {
+  background: #0f172a;
+  color: #64748b;
+}
+
+.section-divider td {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Row animations */
+.fade-in {
+  animation: fadeIn 0.5s ease both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Selected row accent */
+.row-selected {
+  position: relative;
+}
+
+.dark .row-selected {
+  background: rgba(34, 211, 238, 0.06) !important;
+}
+
+.row-selected {
+  background: rgba(8, 145, 178, 0.06) !important;
+}
+
+.row-selected td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+}
+
+.dark .row-selected td:first-child::before {
+  background: #22d3ee;
+}
+
+.row-selected td:first-child::before {
+  background: #0891b2;
+}
+
+/* Glass card */
+.glass-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.dark .glass-card {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.glass-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.dark .glass-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.glass-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Metrics panel */
+.dark .metrics-panel {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.metrics-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* Sticky country column */
+@media (max-width: 1023px) {
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+  }
+
+  .dark .sticky-col {
+    background: inherit;
+  }
+
+  .sticky-col {
+    background: inherit;
+  }
+}
+
+/* Pulsing dot */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.dark .theme-toggle {
+  background: rgba(51, 65, 85, 0.5);
+  color: #fbbf24;
+}
+
+.dark .theme-toggle:hover {
+  background: rgba(51, 65, 85, 0.8);
+}
+
+.theme-toggle {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.theme-toggle:hover {
+  background: #e2e8f0;
+}
