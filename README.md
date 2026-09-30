@@ -27,13 +27,21 @@ All variables are in **nominal terms**.
 
 | Variable | Source | Indicator | Frequency |
 |---|---|---|---|
-| 10Y nominal yields | FRED (St. Louis Fed) | Various (see `scripts/fetch_data.py`) | Daily (USA) / Monthly (others) |
-| Gross debt / GDP | IMF DataMapper | `GGXWDG_NGDP` | Biannual (Apr / Oct) |
-| Primary balance | IMF DataMapper | `GGXONLB_G01_GDP_PT` | Biannual |
-| Real GDP growth | IMF WEO | `NGDP_RPCH` | Biannual |
-| CPI inflation | IMF WEO | `PCPIPCH` | Biannual |
+| 10Y nominal yields | FRED | `GS10` (US), OECD `IRLTLT01XXM156N` (others) | Monthly average |
+| Gross debt / GDP | IMF WEO via SDMX API | `GGXWDG_NGDP` | April and October releases |
+| Primary balance | IMF WEO via SDMX API | `GGXONLB_NGDP` | April and October releases |
+| Real GDP growth | IMF WEO via SDMX API | `NGDP_RPCH` | April and October releases |
+| CPI inflation | IMF WEO via SDMX API | `PCPIPCH` | April and October releases |
 
-Data auto-refreshes every Monday via GitHub Actions.
+Data refreshes every Monday via GitHub Actions. If a source fails, the last good value is carried forward and flagged on the page. Every IMF release is archived in `data/imf_vintages.json` and every run in `data/history.json`.
+
+## Development
+
+```
+pip install -r requirements-dev.txt
+python -m pytest -q
+python scripts/fetch_data.py
+```
 
 ## Countries
 
@@ -46,9 +54,14 @@ fiscal-dashboard/
 ├── index.html                ← the dashboard
 ├── data/
 │   ├── fiscal_data.json      ← auto-generated data (http:// hosting)
-│   └── fiscal_data.js        ← same data as JS variable (file:// opening)
+│   ├── fiscal_data.js        ← same data as JS variable (file:// opening)
+│   ├── history.json          ← snapshot per run, monthly back to 2019
+│   └── imf_vintages.json     ← every IMF WEO release since April 2019
 ├── scripts/
-│   └── fetch_data.py         ← data pipeline (FRED + IMF APIs)
+│   ├── fetch_data.py         ← data pipeline entry point
+│   ├── backfill.py           ← one-off rebuild of history and IMF archive
+│   └── pipeline/             ← sources, validation, compute, history
+├── tests/                    ← offline tests (pytest)
 ├── requirements.txt
 ├── .github/workflows/
 │   └── update_data.yml       ← weekly auto-refresh

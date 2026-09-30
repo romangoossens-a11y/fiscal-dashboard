@@ -10,7 +10,7 @@ G10 Fiscal Sustainability Dashboard for Antigravity Macro Research.
 ## Tech Stack
 - Single HTML file: `index.html` — Tailwind CSS, Alpine.js, Chart.js (all via CDN)
 - Data: `data/fiscal_data.js` (loaded via script tag, works file://) + `data/fiscal_data.json` (fetched via http://)
-- Python pipeline: `scripts/fetch_data.py` — FRED API + IMF DataMapper
+- Python pipeline: `scripts/fetch_data.py` (FRED monthly yields, IMF SDMX API)
 - Hosting: GitHub Pages; auto data refresh every Monday via GitHub Actions
 
 ## Key Technical Notes
@@ -22,14 +22,19 @@ G10 Fiscal Sustainability Dashboard for Antigravity Macro Research.
 
 ## Data Pipeline
 ```powershell
-# Refresh live data (PowerShell)
-$env:FRED_API_KEY="your_key_here"
-cd 'path\to\Fiscal sustainability dashboard'
+# Refresh live data (FRED_API_KEY optional, the public FRED CSV is the fallback)
 python scripts/fetch_data.py
+python -m pytest -q
 ```
-- FRED: 10Y yields — USA `DGS10` (daily), others `IRLTLT01XXM156N` (monthly)
-- IMF primary balance indicator: `GGXONLB_G01_GDP_PT` (changed from old `GGXONLB_NGDP`)
-- `PROJECTION_YEAR = date.today().year` — auto-set to current year at run time
+- Code in `scripts/pipeline/`: `fred.py`, `imf.py` (sources), `vintages.py` (IMF release archive and detection), `validate.py` (ranges, lag, flags), `compute.py`, `history.py`, `run.py` (orchestration, sources injected so tests run offline)
+- Yields: **monthly averages** for all 9. US `GS10`, others OECD `IRLTLT01XXM156N`. Each value carries `r_month`
+- IMF: SDMX API `api.imf.org` (`WEO` dataflow) first, DataMapper fallback, archive last. Indicators `NGDP_RPCH`, `PCPIPCH`, `GGXONLB_NGDP`, `GGXWDG_NGDP`. Target year is the run's calendar year
+- **Never stops on a data problem.** A value that cannot be refreshed is carried forward and flagged (`flags` per country, `data_status` list). The front end shows an amber dot and a data status panel
+- New IMF releases are detected by comparing with the latest archived release, labelled Apr (Apr to Sep) or Oct (Oct to Mar)
+- `data/history.json`: one entry per run (`live`) plus monthly `reconstructed` entries from May 2019
+- `data/imf_vintages.json`: every WEO release from April 2019, years t-3 to t+6
+- `scripts/backfill.py`: one-off rebuild of both files from local WEO files (imf.org blocks scripts)
+- See `PLAN.md` for decisions and the roadmap
 
 ## Fiscal Framework (Nominal Terms)
 - `g = real_growth + inflation` (nominal growth)

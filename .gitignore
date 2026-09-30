@@ -19,3 +19,7 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local virtual environment and test cache
+.venv/
+.pytest_cache/
