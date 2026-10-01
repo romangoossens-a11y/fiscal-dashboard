@@ -1,3 +1,6 @@
+# LF everywhere, so builds on Windows and Linux produce identical assets.
+* text=auto eol=lf
 assets/app.css -text
 assets/vendor/* -text
 assets/fonts/* binary
+*.woff2 binary
