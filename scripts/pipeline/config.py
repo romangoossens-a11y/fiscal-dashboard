@@ -44,10 +44,13 @@ YIELD_SERIES = {
 # IMF WEO indicator codes, keyed by the field name used in the output.
 # The SDMX API and the WEO files share these codes. DataMapper uses a
 # different code for the primary balance.
-IMF_FIELDS = ("real_growth", "inflation", "pb", "debt")
+# Fields used in the fiscal gap. The GDP deflator is derived, not fetched:
+# deflator growth = (1 + nominal GDP growth) / (1 + real growth) - 1, so
+# nominal growth g matches IMF nominal GDP exactly. See imf.derive().
+IMF_FIELDS = ("real_growth", "deflator", "pb", "debt")
 SDMX_INDICATORS = {
     "real_growth": "NGDP_RPCH",   # real GDP growth, %
-    "inflation": "PCPIPCH",       # CPI inflation, period average, %
+    "ngdp": "NGDP",               # nominal GDP, national currency
     "pb": "GGXONLB_NGDP",         # general government primary balance, % GDP
     "debt": "GGXWDG_NGDP",        # general government gross debt, % GDP
 }
@@ -57,14 +60,15 @@ SDMX_INDICATORS = {
 # the GDP deflator.
 AUX_INDICATORS = {
     "overall_balance": "GGXCNL_NGDP",  # general government net lending, % GDP
-    "ngdp": "NGDP",                    # nominal GDP, national currency
 }
-DATAMAPPER_INDICATORS = dict(SDMX_INDICATORS, pb="GGXONLB_G01_GDP_PT")
+# DataMapper has no nominal GDP in national currency, so a DataMapper
+# fallback cannot give the deflator. The archived release fills it in.
+DATAMAPPER_INDICATORS = {"real_growth": "NGDP_RPCH", "pb": "GGXONLB_G01_GDP_PT", "debt": "GGXWDG_NGDP"}
 
 # Year of each IMF field relative to the forecast year t. Debt dynamics run
 # from the end of last year: d_t = d_(t-1) x (1 + r) / (1 + g) - pb_t, so the
 # stabilising balance uses debt at the end of t-1.
-IMF_YEAR_OFFSET = {"real_growth": 0, "inflation": 0, "pb": 0, "debt": -1}
+IMF_YEAR_OFFSET = {"real_growth": 0, "deflator": 0, "pb": 0, "debt": -1}
 
 
 def field_year(field, forecast_year):
@@ -82,7 +86,7 @@ FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 VALID_RANGES = {
     "r": (-1.5, 20.0),
     "real_growth": (-15.0, 15.0),
-    "inflation": (-5.0, 30.0),
+    "deflator": (-10.0, 30.0),
     "pb": (-20.0, 20.0),
     "debt": (0.0, 400.0),
 }
@@ -91,7 +95,7 @@ VALID_RANGES = {
 LARGE_YIELD_MOVE = 1.0          # pp, between consecutive published months
 LARGE_IMF_REVISION = {          # pp, same target year across two releases
     "real_growth": 2.0,
-    "inflation": 2.0,
+    "deflator": 2.0,
     "pb": 2.0,
     "debt": 5.0,
 }

@@ -33,16 +33,15 @@ python -m pytest -q
 ```
 - Code in `scripts/pipeline/`: `fred.py`, `imf.py` (sources), `vintages.py` (IMF release archive and detection), `validate.py` (ranges, lag, flags), `compute.py`, `history.py`, `run.py` (orchestration, sources injected so tests run offline)
 - Yields: **monthly averages** for all 9. US `GS10`, others OECD `IRLTLT01XXM156N`. Each value carries `r_month`
-- IMF: SDMX API `api.imf.org` (`WEO` dataflow) first, DataMapper fallback, archive last. Indicators `NGDP_RPCH`, `PCPIPCH`, `GGXONLB_NGDP`, `GGXWDG_NGDP`. Target year is the run's calendar year
+- IMF: SDMX API `api.imf.org` (`WEO` dataflow) first, DataMapper fallback, archive last. Indicators `NGDP_RPCH`, `NGDP`, `GGXONLB_NGDP`, `GGXWDG_NGDP`, plus `GGXCNL_NGDP` for the bridge. GDP deflator growth is derived in `imf.derive()` from nominal GDP and real growth, so g equals IMF nominal GDP growth. CPI is not used. Target year is the run's calendar year
 - **Never stops on a data problem.** A value that cannot be refreshed is carried forward and flagged (`flags` per country, `data_status` list). The front end shows an amber dot and a data status panel
 - New IMF releases are detected by comparing with the latest archived release, labelled Apr (Apr to Sep) or Oct (Oct to Mar)
 - `data/history.json`: one entry per run (`live`) plus monthly `reconstructed` entries from May 2019
 - `data/imf_vintages.json`: every WEO release from April 2019, years t-3 to t+6
 - `scripts/backfill.py`: one-off rebuild of both files from local WEO files (imf.org blocks scripts)
 - `pipeline/dynamics.py` adds `comparisons` (history snapshots nearest to 1M, 6M, 1Y ago, plus the last one before the current IMF release) and `revisions` (current vs previous IMF release, same calendar year: pb level, debt slope from t-1 to t+4, verdict) to `fiscal_data.json`
-- The page splits the change in the gap into rates, real growth, inflation and fiscal stance with `decompose()` in `assets/app.js`, which mirrors `dynamics.decompose()`. Midpoint weights, so the parts sum exactly. Keep the two in step
 - Breakeven yield = g + 100 x pb x (1 + g) / debt. A +10 bp yield move changes the gap by -debt / (1000 (1 + g))
-- The change decomposition uses Shapley values over four drivers (rates, real growth, inflation, fiscal = pb and debt), because the exact gap is not linear. Python `dynamics.decompose()` and JS `decompose()` must stay identical
+- The change decomposition uses Shapley values over four drivers (rates, real growth, GDP deflator, fiscal = pb and debt), because the exact gap is not linear. Python `dynamics.decompose()` and JS `decompose()` must stay identical
 - `imf_bridge` (IMF debt, net interest = primary minus overall balance, nominal GDP growth) feeds the trajectory footnote explaining simple vs IMF debt in the first year. Series come from `AUX_INDICATORS`
 - Large debt revisions get a generated note (`validate.debt_revision_note`) saying whether the previous year moved too (revised history) or not (new outlook). It updates with every release
 - **Debt is end of previous year** (`debt_year` = forecast year minus 1), as in d_t = d_(t-1) x (1 + r) / (1 + g) - pb_t. History uses the same definition. `config.field_year()` maps each IMF field to its year
@@ -51,7 +50,7 @@ python -m pytest -q
 - See `PLAN.md` for decisions and the roadmap
 
 ## Fiscal Framework (Nominal Terms)
-- `g = real_growth + inflation` (nominal growth)
+- `g = (1 + real_growth)(1 + deflator) - 1` (nominal GDP growth)
 - `pb* = (r - g) / (1 + g) × d_(t-1) / 100` (stabilising primary balance, exact form, debt at end of last year)
 - `fiscal_gap = pb - pb*` (positive = sustainable)
 - `d_t = d_{t-1} × (1 + r/100) / (1 + g/100) - pb` (debt dynamics for chart)

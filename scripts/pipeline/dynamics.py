@@ -2,7 +2,7 @@
 
 comparisons: the history entries the page compares today's table with, for
     1M, 6M, 1Y and "since the last IMF release". The page splits each change
-    in the fiscal gap into rates, real growth, inflation and fiscal stance,
+    in the fiscal gap into rates, real growth, GDP deflator and fiscal stance,
     using decompose() below (mirrored in assets/app.js).
 
 revisions: how the IMF changed its view between its two latest releases, for
@@ -79,7 +79,7 @@ def comparisons(history, run_date: date, archive, current_label):
 DRIVERS = {
     "rates": ("r",),
     "real_growth": ("real_growth",),
-    "inflation": ("inflation",),
+    "deflator": ("deflator",),
     "fiscal": ("pb", "debt"),
 }
 
@@ -100,7 +100,7 @@ def decompose(then, now):
         for k in moved:
             for field in DRIVERS[k]:
                 x[field] = now[field]
-        return fiscal_gap(x["r"], x["real_growth"], x["inflation"], x["pb"], x["debt"])
+        return fiscal_gap(x["r"], x["real_growth"], x["deflator"], x["pb"], x["debt"])
 
     parts = {}
     for k in keys:

@@ -6,18 +6,18 @@ from pipeline import dynamics
 
 
 def snap(r, rg, inf, pb, debt):
-    return {"r": r, "real_growth": rg, "inflation": inf, "pb": pb, "debt": debt}
+    return {"r": r, "real_growth": rg, "deflator": inf, "pb": pb, "debt": debt}
 
 
 def gap(x):
-    g = x["real_growth"] + x["inflation"]
+    g = ((1 + x["real_growth"] / 100) * (1 + x["deflator"] / 100) - 1) * 100
     return x["pb"] - (x["r"] - g) / (1 + g / 100) * x["debt"] / 100
 
 
 def test_decomposition_sums_exactly():
     then, now = snap(1.6, 0.1, 2.0, -1.4, 226.8), snap(2.94, 0.7, 2.3, -1.74, 204.4)
     parts = dynamics.decompose(then, now)
-    total = parts["rates"] + parts["real_growth"] + parts["inflation"] + parts["fiscal"]
+    total = parts["rates"] + parts["real_growth"] + parts["deflator"] + parts["fiscal"]
     assert total == pytest.approx(parts["net"], abs=1e-12)
     assert parts["net"] == pytest.approx(gap(now) - gap(then), abs=1e-12)
 
@@ -25,8 +25,8 @@ def test_decomposition_sums_exactly():
 def test_rates_only_move():
     then, now = snap(4.0, 1.5, 2.5, -1.0, 100.0), snap(4.5, 1.5, 2.5, -1.0, 100.0)
     parts = dynamics.decompose(then, now)
-    assert parts["rates"] == pytest.approx(-0.5 / 1.04)
-    assert parts["real_growth"] == parts["inflation"] == parts["fiscal"] == 0
+    assert parts["rates"] == pytest.approx(-0.5 / (1.015 * 1.025))
+    assert parts["real_growth"] == parts["deflator"] == parts["fiscal"] == 0
 
 
 def test_months_before_clamps_day():

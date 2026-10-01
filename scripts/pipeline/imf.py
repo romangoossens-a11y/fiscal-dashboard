@@ -14,6 +14,23 @@ from .config import (AUX_INDICATORS, COUNTRIES, DATAMAPPER_BASE, DATAMAPPER_INDI
                      SDMX_AGENCY, SDMX_BASE, SDMX_CURRENT_FLOW, SDMX_INDICATORS)
 
 
+def derive(data):
+    """Add GDP deflator growth, % per year, from nominal GDP and real growth.
+
+    nominal GDP = real GDP x deflator, so (1 + g_nominal) = (1 + g_real)(1 + g_deflator).
+    """
+    for fields in data.values():
+        ngdp, real = fields.get("ngdp", {}), fields.get("real_growth", {})
+        out = {}
+        for year, value in ngdp.items():
+            prev, rg = ngdp.get(str(int(year) - 1)), real.get(year)
+            if prev and rg is not None:
+                out[year] = round(((value / prev) / (1 + rg / 100) - 1) * 100, 3)
+        if out:
+            fields["deflator"] = out
+    return data
+
+
 def parse_sdmx(payload, indicator_to_field):
     """Turn one SDMX JSON data response into {iso: {field: {year: value}}}.
 
@@ -55,7 +72,7 @@ def fetch_sdmx(dataflow=SDMX_CURRENT_FLOW, countries=COUNTRIES):
             out.setdefault(iso, {}).update(fields)
     if not out:
         raise RuntimeError(f"SDMX {dataflow} returned no data")
-    return out
+    return derive(out)
 
 
 def list_vintage_flows():
@@ -81,4 +98,4 @@ def fetch_datamapper(countries=COUNTRIES):
         parse_datamapper(resp.json(), code, field, out)
     if not out:
         raise RuntimeError("DataMapper returned no data")
-    return out
+    return derive(out)

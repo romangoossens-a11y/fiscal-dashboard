@@ -3,7 +3,7 @@
 Each entry stores the inputs and the resulting fiscal gap per country:
     {"date": "2026-09-30", "kind": "live" | "reconstructed",
      "imf_vintage": "Apr2026", "target_year": 2026,
-     "countries": {iso: {"r", "r_month", "real_growth", "inflation",
+     "countries": {iso: {"r", "r_month", "real_growth", "deflator",
                          "pb", "debt", "fiscal_gap"}}}
 
 Debt is at the end of the year before target_year, like the live table.
@@ -17,7 +17,7 @@ import json
 
 from .config import HISTORY_FILE
 
-KEYS = ("r", "r_month", "real_growth", "inflation", "pb", "debt", "fiscal_gap")
+KEYS = ("r", "r_month", "real_growth", "deflator", "pb", "debt", "fiscal_gap")
 
 
 def load(path=HISTORY_FILE):

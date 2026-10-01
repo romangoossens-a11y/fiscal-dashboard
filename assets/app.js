@@ -5,7 +5,7 @@ const DRIVERS = [
     tagClass: 'bg-orange-100 text-orange-900 dark:bg-orange-950/60 dark:text-orange-200' },
   { key: 'real_growth', label: 'Real growth', source: 'IMF', tag: 'growth', color: '#1D9E75',
     tagClass: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200' },
-  { key: 'inflation', label: 'Inflation', source: 'IMF', tag: 'inflation', color: '#EF9F27',
+  { key: 'deflator', label: 'GDP deflator', source: 'IMF', tag: 'deflator', color: '#EF9F27',
     tagClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200' },
   { key: 'fiscal', label: 'Primary balance and debt', source: 'IMF', tag: 'fiscal', color: '#7F77DD',
     tagClass: 'bg-violet-100 text-violet-900 dark:bg-violet-950/60 dark:text-violet-200' },
@@ -16,7 +16,7 @@ const DRIVERS = [
 const DRIVER_PHRASES = {
   rates: { '1': 'lower 10Y yields', '-1': 'higher 10Y yields' },
   real_growth: { '1': 'stronger IMF real growth forecasts', '-1': 'weaker IMF real growth forecasts' },
-  inflation: { '1': 'higher IMF inflation forecasts', '-1': 'lower IMF inflation forecasts' },
+  deflator: { '1': 'higher IMF GDP deflator forecasts', '-1': 'lower IMF GDP deflator forecasts' },
   fiscal: { '1': 'better IMF primary balance and debt forecasts', '-1': 'worse IMF primary balance and debt forecasts' },
 };
 
@@ -28,11 +28,15 @@ const CHANGE_THRESHOLD = 0.05;
 function stabilisingBalance(r, g, debt) {
   return (r - g) / (1 + g / 100) * debt / 100;
 }
+// Nominal GDP growth from real growth and GDP deflator growth, %
+function nominalGrowth(realGrowth, deflator) {
+  return ((1 + realGrowth / 100) * (1 + deflator / 100) - 1) * 100;
+}
 function fiscalGap(x) {
-  return x.pb - stabilisingBalance(x.r, x.real_growth + x.inflation, x.debt);
+  return x.pb - stabilisingBalance(x.r, nominalGrowth(x.real_growth, x.deflator), x.debt);
 }
 // Inputs moved by each driver in the decomposition
-const DRIVER_INPUTS = { rates: ['r'], real_growth: ['real_growth'], inflation: ['inflation'], fiscal: ['pb', 'debt'] };
+const DRIVER_INPUTS = { rates: ['r'], real_growth: ['real_growth'], deflator: ['deflator'], fiscal: ['pb', 'debt'] };
 
 function dashboard() {
   let _chart = null;    // stored outside Alpine proxy so assignments persist
@@ -289,7 +293,7 @@ function dashboard() {
     },
     change(c) {
       const then = this.reference?.countries?.[c.iso3];
-      const keys = ['r', 'real_growth', 'inflation', 'pb', 'debt'];
+      const keys = ['r', 'real_growth', 'deflator', 'pb', 'debt'];
       if (!then || keys.some(k => typeof then[k] !== 'number' || typeof c[k] !== 'number')) return null;
       return this.decompose(then, c);
     },
@@ -363,9 +367,9 @@ function dashboard() {
 
     // ── Recompute derived fields
     recompute(c, sort = true) {
-      // An edited g keeps inflation and moves real growth, so the change
+      // An edited g keeps the deflator and moves real growth, so the change
       // decomposition stays consistent with the table.
-      if (typeof c.inflation === 'number') c.real_growth = c.g - c.inflation;
+      if (typeof c.deflator === 'number') c.real_growth = ((1 + c.g / 100) / (1 + c.deflator / 100) - 1) * 100;
       c.r_g = +(c.r - c.g).toFixed(2);
       c.pb_star = +stabilisingBalance(c.r, c.g, c.debt).toFixed(2);
       c.fiscal_gap = +(c.pb - c.pb_star).toFixed(2);
@@ -420,7 +424,7 @@ function dashboard() {
     // Flags raised by the pipeline for one displayed field. g covers its
     // two IMF components.
     flagText(c, field) {
-      const fields = field === 'g' ? ['real_growth', 'inflation'] : [field];
+      const fields = field === 'g' ? ['real_growth', 'deflator'] : [field];
       return (c.flags || []).filter(f => fields.includes(f.field)).map(f => f.message).join(' | ');
     },
     mostCommon(items) {

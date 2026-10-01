@@ -65,3 +65,5 @@ Tick items off as they land.
 - [x] Generated key messages
 - [x] All labels from the data, tested against missing and shifted data
 - [x] Content hashed asset links
+- [x] Remove trajectory sliders, reset on the drivers card
+- [x] GDP deflator instead of CPI (derived from IMF nominal GDP), drivers toggle pinned top right

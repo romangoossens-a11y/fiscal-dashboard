@@ -2,12 +2,14 @@
 
 from datetime import date
 
+import pytest
+
 from pipeline.config import COUNTRIES, YIELD_SERIES
 from pipeline.run import build
 from pipeline.validate import CARRIED_FORWARD, LAGGING
 
 RUN = date(2026, 9, 30)
-IMF = {iso: {"real_growth": {"2026": 1.5}, "inflation": {"2026": 2.5},
+IMF = {iso: {"real_growth": {"2026": 1.5}, "deflator": {"2026": 2.5},
              "pb": {"2026": -1.0}, "debt": {"2025": 100.0, "2026": 103.0}} for iso in COUNTRIES}
 SERIES_TO_ISO = {s: iso for iso, s in YIELD_SERIES.items()}
 
@@ -41,7 +43,8 @@ def test_happy_path():
     assert out["data_vintage"] == "IMF WEO April 2026 | 10Y yields: monthly averages, Aug 2026"
     c = by_iso(out)["USA"]
     assert c["r"] == 4.0 and c["r_month"] == "2026-08" and c["flags"] == []
-    assert c["fiscal_gap"] == -1.0  # pb -1 - (4 - 4) x 100 / 100
+    # g = 1.015 x 1.025 - 1 = 4.04%, above r = 4%, so pb* is slightly negative
+    assert c["fiscal_gap"] == pytest.approx(-1 - (4 - 4.0375) / 1.040375, abs=0.01)
     assert c["debt"] == 100.0 and out["debt_year"] == 2025  # end of last year
 
 

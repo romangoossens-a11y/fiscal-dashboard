@@ -134,11 +134,11 @@ def apply_override(iso, row, overrides, status):
     ov = overrides.get(iso)
     if not ov:
         return
-    for field in ("r", "debt", "pb", "real_growth", "inflation"):
+    for field in ("r", "debt", "pb", "real_growth", "deflator"):
         if field in ov:
             row[field] = ov[field]
     if "g" in ov:
-        row["real_growth"] = ov["g"] - (row["inflation"] or 0)
+        row["real_growth"] = ((1 + ov["g"] / 100) / (1 + (row["deflator"] or 0) / 100) - 1) * 100
     status.append(f"{COUNTRY_NAMES[iso]}: manual override applied ({', '.join(sorted(ov))})")
 
 
@@ -166,7 +166,7 @@ def build(run_date: date, fetch_yield, fetch_sdmx, fetch_datamapper,
             skipped.append(iso)
             continue
         c = compute.compute_country(iso, row["debt"], row["r"], row["real_growth"],
-                                    row["inflation"], row["pb"])
+                                    row["deflator"], row["pb"])
         c["r_month"] = y["r_month"]
         c["r_source"] = y["r_source"]
         c["flags"] = y["flags"] + imf_flags

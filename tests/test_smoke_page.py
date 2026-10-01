@@ -97,7 +97,7 @@ def test_change_column_and_drivers_chart(browser, base_url):
             d.setPeriod(p);
             out[p] = Math.max(...d.allCountries.map(c => {
                 const ch = d.change(c);
-                return Math.abs(ch.rates + ch.real_growth + ch.inflation + ch.fiscal - ch.net);
+                return Math.abs(ch.rates + ch.real_growth + ch.deflator + ch.fiscal - ch.net);
             }));
         }
         return { errors: out, bars: Chart.getChart('driversChart').data.labels.length };
@@ -176,10 +176,10 @@ def test_page_survives_missing_blocks(browser, base_url, strip):
 
 
 def test_page_survives_old_schema_countries(browser, base_url):
-    # Version 1 files had no real growth, inflation or yield month.
+    # Older files had no real growth, deflator or yield month.
     payload = real_payload()
     for c in payload["countries"]:
-        for k in ("real_growth", "inflation", "r_month", "flags"):
+        for k in ("real_growth", "deflator", "inflation", "r_month", "flags"):
             c.pop(k, None)
     page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
     assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == 9
@@ -295,4 +295,25 @@ def test_theme_toggle_and_country_select(browser, base_url):
     assert chart_state(page) != before
     assert "Japan" in page.locator("select").locator("option:checked").inner_text()
     assert problems == []
+    page.close()
+
+
+def test_drivers_toggle_stays_put(browser, base_url):
+    # The toggle must not jump when the sentence beside it changes length,
+    # or when a scenario adds the reset button. Measured within its card.
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    page.goto(base_url + "/index.html")
+    page.wait_for_load_state("networkidle")
+    group = page.locator("[aria-label='Comparison period']").nth(1)
+    where = """g => { const c = g.closest('.glass-card').getBoundingClientRect(), b = g.getBoundingClientRect();
+                      return [Math.round(c.right - b.right), Math.round(b.top - c.top)]; }"""
+    positions = set()
+    for label in ("1M", "6M", "1Y", "Last IMF release", "1M"):
+        group.get_by_role("button", name=label, exact=True).click()
+        page.wait_for_timeout(150)
+        positions.add(tuple(group.evaluate(where)))
+    page.locator("#yield-shift").fill("25")
+    page.wait_for_timeout(150)
+    positions.add(tuple(group.evaluate(where)))
+    assert len(positions) == 1, positions
     page.close()

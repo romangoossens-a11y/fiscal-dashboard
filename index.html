@@ -7,7 +7,7 @@
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
-  <link rel="stylesheet" href="assets/app.css?v=9a5cf70f" />
+  <link rel="stylesheet" href="assets/app.css?v=3ca60bec" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=5f49fff6"></script>
+  <script defer src="assets/app.js?v=f9e6b4da"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -157,7 +157,7 @@
                 Debt<span class="block font-normal text-slate-500" x-text="'% GDP, end ' + debtYearText"></span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="General government primary balance: overall balance excluding interest. Positive is a surplus">
                 Primary balance<span class="block font-normal text-slate-500" x-text="'% GDP, ' + (yearText || 'forecast')"></span></th>
-              <th class="text-right px-3 py-2.5 font-semibold" title="Real GDP growth plus CPI inflation">
+              <th class="text-right px-3 py-2.5 font-semibold" title="IMF nominal GDP growth: real growth combined with GDP deflator growth">
                 Nominal growth (g)<span class="block font-normal text-slate-500" x-text="'%, ' + (yearText || 'forecast')"></span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="Monthly average 10Y government bond yield">
                 10Y yield (r)<span class="block font-normal text-slate-500" x-text="'%, ' + monthText + ' avg'"></span></th>
@@ -223,7 +223,7 @@
                     </template>
                     <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'g')">
                       <span class="editable-cell" @click.stop="startEdit(c, 'g')" x-text="fmt(c.g)"
-                        :title="typeof c.real_growth === 'number' ? 'Real growth ' + fmt(c.real_growth) + ' + inflation ' + fmt(c.inflation) : ''"></span>
+                        :title="typeof c.deflator === 'number' ? 'Real growth ' + fmt(c.real_growth) + '%, GDP deflator ' + fmt(c.deflator) + '%' : ''"></span>
                     </template>
                     <span class="flag-dot" x-show="flagText(c, 'g')" :title="flagText(c, 'g')"></span>
                   </td>
@@ -291,7 +291,7 @@
           ratio is stable, and the yield cushion is how far the actual yield is below it. Main driver tags:
           <span class="px-1 rounded bg-orange-100 text-orange-900 dark:bg-orange-950/60 dark:text-orange-200">yields</span> market,
           <span class="px-1 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200">growth</span>,
-          <span class="px-1 rounded bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">inflation</span> and
+          <span class="px-1 rounded bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">deflator</span> and
           <span class="px-1 rounded bg-violet-100 text-violet-900 dark:bg-violet-950/60 dark:text-violet-200">fiscal</span> IMF forecasts.
         </p>
         <p>
@@ -304,15 +304,17 @@
 
     <!-- ── Drivers Card: what moved the fiscal gap ── -->
     <div class="glass-card fade-in" style="animation-delay: 0.15s" x-show="periods.length > 0 && allCountries.length > 0">
-      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <!-- Text on the left can grow without pushing the controls: on wide
+           screens they are pinned top right, on phones they stack below. -->
+      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div class="min-w-0 md:flex-1">
           <h2 class="text-base font-semibold text-slate-900 dark:text-white">What Moved the Fiscal Gap</h2>
           <p class="text-sm text-slate-700 dark:text-slate-200 mt-1" x-text="periodMessage"></p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="periodCaption"></p>
           <p class="text-xs mt-1 text-amber-700 dark:text-amber-400" x-show="hasEdits">
             Showing your scenario edits, not the published data.</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 md:shrink-0 md:justify-end">
         <button @click="resetEdits()" x-show="hasEdits"
           class="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors whitespace-nowrap">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,11 +355,11 @@
         </div>
         <div class="relative" style="height: 440px;">
           <canvas id="driversChart" role="img"
-            aria-label="Change in each country's fiscal gap split into the 10Y yield, real growth, inflation and primary balance and debt, with a dot for the net change"></canvas>
+            aria-label="Change in each country's fiscal gap split into the 10Y yield, real growth, GDP deflator and primary balance and debt, with a dot for the net change"></canvas>
         </div>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">
           Bars to the right improved the gap, bars to the left worsened it. The four contributions add up exactly to
-          the dot. Higher inflation forecasts raise nominal growth and so improve the gap, without being good news.
+          the dot. A higher GDP deflator raises nominal growth and so improves the gap, without being good news.
           Over 1Y the IMF bars also include the move to a new forecast year. Scenario edits and the yield shift flow through.
         </p>
       </div>
@@ -512,7 +514,8 @@
                 x-text="bridge ? 'Why the lines differ: debt at end ' + bridge.year + ' is ' + fmt(bridge.simple) + '% in the simple projection and ' + fmt(bridge.imf) + '% in the IMF forecast (' + fmtSigned(bridge.total) + ' pp)' : ''"></p>
               <ul class="mt-1 space-y-0.5">
                 <li x-text="bridge ? 'Interest, ' + fmtSigned(bridge.interest) + ' pp: the simple projection charges the ' + fmt(bridge.r) + '% 10Y yield on the whole debt stock. The IMF uses the interest actually paid net of interest received, an average rate of ' + fmt(bridge.rEff) + '%, because most debt was issued at older coupons and governments also earn interest on their assets.' : ''"></li>
-                <li x-text="bridge ? 'Growth, ' + fmtSigned(bridge.growth) + ' pp: the simple projection uses real growth plus CPI inflation (' + fmt(bridge.g) + '%). The IMF uses nominal GDP growth (' + fmt(bridge.gNominal) + '%), which runs on the GDP deflator.' : ''"></li>
+                <li x-show="bridge && Math.abs(bridge.growth) >= 0.05"
+                  x-text="bridge ? 'Growth, ' + fmtSigned(bridge.growth) + ' pp: nominal growth in the table (' + fmt(bridge.g) + '%) has been edited away from the IMF nominal GDP growth (' + fmt(bridge.gNominal) + '%).' : ''"></li>
                 <li x-text="bridge ? 'Other flows, ' + fmtSigned(bridge.other) + ' pp: changes in debt not explained by the deficit, such as asset purchases, privatisation, exchange rate valuation or the timing of tax credits.' : ''"></li>
               </ul>
               <p class="mt-1">Positive means the simple projection is higher. Beyond the first year the gap compounds,

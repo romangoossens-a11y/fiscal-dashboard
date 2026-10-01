@@ -23,13 +23,13 @@
       "iso3": "ESP",
       "debt": 100.4,
       "r": 3.63,
-      "g": 5.13,
+      "g": 5.2,
       "real_growth": 2.09,
-      "inflation": 3.04,
-      "r_g": -1.5,
+      "deflator": 3.04,
+      "r_g": -1.56,
       "pb": 0.29,
-      "pb_star": -1.43,
-      "fiscal_gap": 1.72,
+      "pb_star": -1.49,
+      "fiscal_gap": 1.78,
       "sustainable": true,
       "r_month": "2026-08",
       "r_source": "FRED CSV (no API key) IRLTLT01ESM156N",
@@ -40,16 +40,33 @@
       "iso3": "CHE",
       "debt": 39.4,
       "r": 0.47,
-      "g": 1.82,
+      "g": 1.8,
       "real_growth": 1.34,
-      "inflation": 0.47,
-      "r_g": -1.35,
+      "deflator": 0.46,
+      "r_g": -1.33,
       "pb": 0.34,
       "pb_star": -0.52,
-      "fiscal_gap": 0.86,
+      "fiscal_gap": 0.85,
       "sustainable": true,
       "r_month": "2026-08",
       "r_source": "FRED CSV (no API key) IRLTLT01CHM156N",
+      "flags": []
+    },
+    {
+      "name": "Canada",
+      "iso3": "CAN",
+      "debt": 113.5,
+      "r": 3.67,
+      "g": 5.4,
+      "real_growth": 1.5,
+      "deflator": 3.84,
+      "r_g": -1.72,
+      "pb": -2.43,
+      "pb_star": -1.85,
+      "fiscal_gap": -0.58,
+      "sustainable": false,
+      "r_month": "2026-08",
+      "r_source": "FRED CSV (no API key) IRLTLT01CAM156N",
       "flags": []
     },
     {
@@ -57,16 +74,67 @@
       "iso3": "ITA",
       "debt": 137.1,
       "r": 3.99,
-      "g": 3.16,
+      "g": 2.83,
       "real_growth": 0.52,
-      "inflation": 2.64,
-      "r_g": 0.83,
+      "deflator": 2.3,
+      "r_g": 1.15,
       "pb": 0.79,
-      "pb_star": 1.1,
-      "fiscal_gap": -0.31,
+      "pb_star": 1.54,
+      "fiscal_gap": -0.75,
       "sustainable": false,
       "r_month": "2026-08",
       "r_source": "FRED CSV (no API key) IRLTLT01ITM156N",
+      "flags": []
+    },
+    {
+      "name": "Germany",
+      "iso3": "DEU",
+      "debt": 62.9,
+      "r": 3.18,
+      "g": 3.45,
+      "real_growth": 0.79,
+      "deflator": 2.64,
+      "r_g": -0.27,
+      "pb": -2.83,
+      "pb_star": -0.16,
+      "fiscal_gap": -2.67,
+      "sustainable": false,
+      "r_month": "2026-08",
+      "r_source": "FRED CSV (no API key) IRLTLT01DEM156N",
+      "flags": []
+    },
+    {
+      "name": "United Kingdom",
+      "iso3": "GBR",
+      "debt": 102.3,
+      "r": 4.99,
+      "g": 3.28,
+      "real_growth": 0.8,
+      "deflator": 2.46,
+      "r_g": 1.71,
+      "pb": -1.23,
+      "pb_star": 1.7,
+      "fiscal_gap": -2.93,
+      "sustainable": false,
+      "r_month": "2026-08",
+      "r_source": "FRED CSV (no API key) IRLTLT01GBM156N",
+      "flags": []
+    },
+    {
+      "name": "United States",
+      "iso3": "USA",
+      "debt": 123.9,
+      "r": 4.68,
+      "g": 5.26,
+      "real_growth": 2.32,
+      "deflator": 2.87,
+      "r_g": -0.58,
+      "pb": -3.67,
+      "pb_star": -0.68,
+      "fiscal_gap": -2.99,
+      "sustainable": false,
+      "r_month": "2026-08",
+      "r_source": "FRED CSV (no API key) GS10",
       "flags": []
     },
     {
@@ -74,13 +142,13 @@
       "iso3": "JPN",
       "debt": 206.5,
       "r": 2.94,
-      "g": 2.96,
+      "g": 2.09,
       "real_growth": 0.72,
-      "inflation": 2.24,
-      "r_g": -0.02,
+      "deflator": 1.36,
+      "r_g": 0.85,
       "pb": -1.74,
-      "pb_star": -0.04,
-      "fiscal_gap": -1.69,
+      "pb_star": 1.73,
+      "fiscal_gap": -3.47,
       "sustainable": false,
       "r_month": "2026-08",
       "r_source": "FRED CSV (no API key) IRLTLT01JPM156N",
@@ -93,85 +161,17 @@
       ]
     },
     {
-      "name": "Canada",
-      "iso3": "CAN",
-      "debt": 113.5,
-      "r": 3.67,
-      "g": 4.04,
-      "real_growth": 1.5,
-      "inflation": 2.54,
-      "r_g": -0.36,
-      "pb": -2.43,
-      "pb_star": -0.39,
-      "fiscal_gap": -2.04,
-      "sustainable": false,
-      "r_month": "2026-08",
-      "r_source": "FRED CSV (no API key) IRLTLT01CAM156N",
-      "flags": []
-    },
-    {
-      "name": "United Kingdom",
-      "iso3": "GBR",
-      "debt": 102.3,
-      "r": 4.99,
-      "g": 4.0,
-      "real_growth": 0.8,
-      "inflation": 3.2,
-      "r_g": 0.99,
-      "pb": -1.23,
-      "pb_star": 0.97,
-      "fiscal_gap": -2.2,
-      "sustainable": false,
-      "r_month": "2026-08",
-      "r_source": "FRED CSV (no API key) IRLTLT01GBM156N",
-      "flags": []
-    },
-    {
-      "name": "United States",
-      "iso3": "USA",
-      "debt": 123.9,
-      "r": 4.68,
-      "g": 5.55,
-      "real_growth": 2.32,
-      "inflation": 3.23,
-      "r_g": -0.87,
-      "pb": -3.67,
-      "pb_star": -1.02,
-      "fiscal_gap": -2.64,
-      "sustainable": false,
-      "r_month": "2026-08",
-      "r_source": "FRED CSV (no API key) GS10",
-      "flags": []
-    },
-    {
-      "name": "Germany",
-      "iso3": "DEU",
-      "debt": 62.9,
-      "r": 3.18,
-      "g": 3.44,
-      "real_growth": 0.79,
-      "inflation": 2.65,
-      "r_g": -0.26,
-      "pb": -2.83,
-      "pb_star": -0.16,
-      "fiscal_gap": -2.68,
-      "sustainable": false,
-      "r_month": "2026-08",
-      "r_source": "FRED CSV (no API key) IRLTLT01DEM156N",
-      "flags": []
-    },
-    {
       "name": "France",
       "iso3": "FRA",
       "debt": 116.0,
       "r": 4.0,
-      "g": 2.7,
+      "g": 2.23,
       "real_growth": 0.86,
-      "inflation": 1.84,
-      "r_g": 1.3,
+      "deflator": 1.36,
+      "r_g": 1.77,
       "pb": -2.71,
-      "pb_star": 1.47,
-      "fiscal_gap": -4.18,
+      "pb_star": 2.01,
+      "fiscal_gap": -4.72,
       "sustainable": false,
       "r_month": "2026-08",
       "r_source": "FRED CSV (no API key) IRLTLT01FRM156N",
@@ -190,16 +190,16 @@
           "r": 3.53,
           "r_month": "2026-07",
           "real_growth": 2.09,
-          "inflation": 3.04,
+          "deflator": 3.04,
           "pb": 0.29,
           "debt": 100.4,
-          "fiscal_gap": 1.82
+          "fiscal_gap": 1.88
         },
         "CHE": {
           "r": 0.48,
           "r_month": "2026-07",
           "real_growth": 1.34,
-          "inflation": 0.47,
+          "deflator": 0.46,
           "pb": 0.34,
           "debt": 39.4,
           "fiscal_gap": 0.85
@@ -208,64 +208,64 @@
           "r": 3.88,
           "r_month": "2026-07",
           "real_growth": 0.52,
-          "inflation": 2.64,
+          "deflator": 2.3,
           "pb": 0.79,
           "debt": 137.1,
-          "fiscal_gap": -0.17
+          "fiscal_gap": -0.61
         },
         "JPN": {
           "r": 2.79,
           "r_month": "2026-07",
           "real_growth": 0.72,
-          "inflation": 2.24,
+          "deflator": 1.36,
           "pb": -1.74,
           "debt": 206.5,
-          "fiscal_gap": -1.39
+          "fiscal_gap": -3.16
         },
         "CAN": {
           "r": 3.55,
           "r_month": "2026-07",
           "real_growth": 1.5,
-          "inflation": 2.54,
+          "deflator": 3.84,
           "pb": -2.43,
           "debt": 113.5,
-          "fiscal_gap": -1.9
+          "fiscal_gap": -0.44
         },
         "GBR": {
           "r": 4.93,
           "r_month": "2026-07",
           "real_growth": 0.8,
-          "inflation": 3.2,
+          "deflator": 2.46,
           "pb": -1.23,
           "debt": 102.3,
-          "fiscal_gap": -2.15
+          "fiscal_gap": -2.87
         },
         "DEU": {
           "r": 3.07,
           "r_month": "2026-07",
           "real_growth": 0.79,
-          "inflation": 2.65,
+          "deflator": 2.64,
           "pb": -2.83,
           "debt": 62.9,
-          "fiscal_gap": -2.61
+          "fiscal_gap": -2.6
         },
         "USA": {
           "r": 4.6,
           "r_month": "2026-07",
           "real_growth": 2.32,
-          "inflation": 3.23,
+          "deflator": 2.87,
           "pb": -3.67,
           "debt": 123.9,
-          "fiscal_gap": -2.55
+          "fiscal_gap": -2.9
         },
         "FRA": {
           "r": 3.85,
           "r_month": "2026-07",
           "real_growth": 0.86,
-          "inflation": 1.84,
+          "deflator": 1.36,
           "pb": -2.71,
           "debt": 116.0,
-          "fiscal_gap": -4.01
+          "fiscal_gap": -4.55
         }
       }
     },
@@ -280,82 +280,82 @@
           "r": 3.18,
           "r_month": "2026-02",
           "real_growth": 1.96,
-          "inflation": 2.02,
+          "deflator": 2.47,
           "pb": 0.01,
           "debt": 100.4,
-          "fiscal_gap": 0.79
+          "fiscal_gap": 1.26
         },
         "CHE": {
           "r": 0.25,
           "r_month": "2026-02",
           "real_growth": 1.27,
-          "inflation": 0.56,
+          "deflator": 0.62,
           "pb": 0.15,
           "debt": 36.9,
-          "fiscal_gap": 0.72
+          "fiscal_gap": 0.75
         },
         "ITA": {
           "r": 3.39,
           "r_month": "2026-02",
           "real_growth": 0.76,
-          "inflation": 2.01,
+          "deflator": 2.01,
           "pb": 1.05,
           "debt": 136.8,
-          "fiscal_gap": 0.24
+          "fiscal_gap": 0.25
         },
         "JPN": {
           "r": 2.11,
           "r_month": "2026-02",
           "real_growth": 0.63,
-          "inflation": 2.14,
+          "deflator": 1.96,
           "pb": -1.4,
           "debt": 229.6,
-          "fiscal_gap": 0.09
+          "fiscal_gap": -0.3
         },
         "CAN": {
           "r": 3.29,
           "r_month": "2026-02",
           "real_growth": 1.54,
-          "inflation": 2.03,
+          "deflator": 2.44,
           "pb": -1.97,
           "debt": 113.9,
-          "fiscal_gap": -1.66
+          "fiscal_gap": -1.17
         },
         "GBR": {
           "r": 4.43,
           "r_month": "2026-02",
           "real_growth": 1.26,
-          "inflation": 2.55,
+          "deflator": 2.33,
           "pb": -0.97,
           "debt": 103.4,
-          "fiscal_gap": -1.59
+          "fiscal_gap": -1.77
         },
         "DEU": {
           "r": 2.75,
           "r_month": "2026-02",
           "real_growth": 0.94,
-          "inflation": 1.76,
+          "deflator": 1.89,
           "pb": -2.4,
           "debt": 64.4,
-          "fiscal_gap": -2.43
+          "fiscal_gap": -2.34
         },
         "USA": {
           "r": 4.13,
           "r_month": "2026-02",
           "real_growth": 2.1,
-          "inflation": 2.44,
+          "deflator": 1.8,
           "pb": -4.06,
           "debt": 125.0,
-          "fiscal_gap": -3.58
+          "fiscal_gap": -4.29
         },
         "FRA": {
           "r": 3.4,
           "r_month": "2026-02",
           "real_growth": 0.91,
-          "inflation": 1.53,
+          "deflator": 1.53,
           "pb": -3.59,
           "debt": 116.5,
-          "fiscal_gap": -4.68
+          "fiscal_gap": -4.66
         }
       }
     },
@@ -370,82 +370,82 @@
           "r": 3.26,
           "r_month": "2025-08",
           "real_growth": 2.5,
-          "inflation": 2.22,
+          "deflator": 2.43,
           "pb": -0.49,
           "debt": 101.8,
-          "fiscal_gap": 0.93
+          "fiscal_gap": 1.19
         },
         "CHE": {
           "r": 0.32,
           "r_month": "2025-08",
           "real_growth": 0.88,
-          "inflation": 0.23,
+          "deflator": 0.24,
           "pb": 0.36,
           "debt": 37.6,
-          "fiscal_gap": 0.65
+          "fiscal_gap": 0.66
         },
         "ITA": {
           "r": 3.54,
           "r_month": "2025-08",
           "real_growth": 0.44,
-          "inflation": 1.71,
+          "deflator": 2.18,
           "pb": 0.58,
           "debt": 135.3,
-          "fiscal_gap": -1.26
+          "fiscal_gap": -0.61
         },
         "JPN": {
           "r": 1.6,
           "r_month": "2025-08",
           "real_growth": 0.55,
-          "inflation": 2.36,
+          "deflator": 1.91,
           "pb": -2.44,
           "debt": 236.7,
-          "fiscal_gap": 0.58
+          "fiscal_gap": -0.43
         },
         "CAN": {
           "r": 3.42,
           "r_month": "2025-08",
           "real_growth": 1.38,
-          "inflation": 1.98,
+          "deflator": 2.21,
           "pb": -1.31,
           "debt": 110.8,
-          "fiscal_gap": -1.38
+          "fiscal_gap": -1.1
         },
         "GBR": {
           "r": 4.64,
           "r_month": "2025-08",
           "real_growth": 1.08,
-          "inflation": 3.12,
+          "deflator": 3.33,
           "pb": -1.89,
           "debt": 101.2,
-          "fiscal_gap": -2.31
+          "fiscal_gap": -2.08
         },
         "DEU": {
           "r": 2.67,
           "r_month": "2025-08",
           "real_growth": -0.05,
-          "inflation": 2.09,
+          "deflator": 2.39,
           "pb": -2.13,
           "debt": 63.9,
-          "fiscal_gap": -2.53
+          "fiscal_gap": -2.34
         },
         "USA": {
           "r": 4.26,
           "r_month": "2025-08",
           "real_growth": 1.83,
-          "inflation": 2.99,
+          "deflator": 2.66,
           "pb": -2.61,
           "debt": 120.8,
-          "fiscal_gap": -1.98
+          "fiscal_gap": -2.3
         },
         "FRA": {
           "r": 3.42,
           "r_month": "2025-08",
           "real_growth": 0.64,
-          "inflation": 1.3,
+          "deflator": 1.39,
           "pb": -3.39,
           "debt": 113.1,
-          "fiscal_gap": -5.04
+          "fiscal_gap": -4.92
         }
       }
     },
@@ -460,82 +460,82 @@
           "r": 3.18,
           "r_month": "2026-02",
           "real_growth": 1.96,
-          "inflation": 2.02,
+          "deflator": 2.47,
           "pb": 0.01,
           "debt": 100.4,
-          "fiscal_gap": 0.79
+          "fiscal_gap": 1.26
         },
         "CHE": {
           "r": 0.25,
           "r_month": "2026-02",
           "real_growth": 1.27,
-          "inflation": 0.56,
+          "deflator": 0.62,
           "pb": 0.15,
           "debt": 36.9,
-          "fiscal_gap": 0.72
+          "fiscal_gap": 0.75
         },
         "ITA": {
           "r": 3.39,
           "r_month": "2026-02",
           "real_growth": 0.76,
-          "inflation": 2.01,
+          "deflator": 2.01,
           "pb": 1.05,
           "debt": 136.8,
-          "fiscal_gap": 0.24
+          "fiscal_gap": 0.25
         },
         "JPN": {
           "r": 2.11,
           "r_month": "2026-02",
           "real_growth": 0.63,
-          "inflation": 2.14,
+          "deflator": 1.96,
           "pb": -1.4,
           "debt": 229.6,
-          "fiscal_gap": 0.09
+          "fiscal_gap": -0.3
         },
         "CAN": {
           "r": 3.29,
           "r_month": "2026-02",
           "real_growth": 1.54,
-          "inflation": 2.03,
+          "deflator": 2.44,
           "pb": -1.97,
           "debt": 113.9,
-          "fiscal_gap": -1.66
+          "fiscal_gap": -1.17
         },
         "GBR": {
           "r": 4.43,
           "r_month": "2026-02",
           "real_growth": 1.26,
-          "inflation": 2.55,
+          "deflator": 2.33,
           "pb": -0.97,
           "debt": 103.4,
-          "fiscal_gap": -1.59
+          "fiscal_gap": -1.77
         },
         "DEU": {
           "r": 2.75,
           "r_month": "2026-02",
           "real_growth": 0.94,
-          "inflation": 1.76,
+          "deflator": 1.89,
           "pb": -2.4,
           "debt": 64.4,
-          "fiscal_gap": -2.43
+          "fiscal_gap": -2.34
         },
         "USA": {
           "r": 4.13,
           "r_month": "2026-02",
           "real_growth": 2.1,
-          "inflation": 2.44,
+          "deflator": 1.8,
           "pb": -4.06,
           "debt": 125.0,
-          "fiscal_gap": -3.58
+          "fiscal_gap": -4.29
         },
         "FRA": {
           "r": 3.4,
           "r_month": "2026-02",
           "real_growth": 0.91,
-          "inflation": 1.53,
+          "deflator": 1.53,
           "pb": -3.59,
           "debt": 116.5,
-          "fiscal_gap": -4.68
+          "fiscal_gap": -4.66
         }
       }
     }

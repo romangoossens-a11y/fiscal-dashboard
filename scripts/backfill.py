@@ -29,11 +29,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pipeline import compute, fred, history, imf, vintages  # noqa: E402
-from pipeline.config import (COUNTRIES, SDMX_INDICATORS, WEO_RELEASE_DATES,  # noqa: E402
-                             YIELD_SERIES, field_year)
+from pipeline.config import (AUX_INDICATORS, COUNTRIES, IMF_FIELDS,  # noqa: E402
+                             SDMX_INDICATORS, WEO_RELEASE_DATES, YIELD_SERIES, field_year)
 from pipeline.validate import add_months  # noqa: E402
 
-CODE_TO_FIELD = {code: field for field, code in SDMX_INDICATORS.items()}
+CODE_TO_FIELD = {code: field for field, code in {**SDMX_INDICATORS, **AUX_INDICATORS}.items()}
 
 
 def read_weo_tsv(path):
@@ -63,7 +63,7 @@ def read_weo_tsv(path):
                 out.setdefault(iso, {}).setdefault(field, {})[year] = round(float(cell), 3)
             except ValueError:
                 continue
-    return out
+    return imf.derive(out)
 
 
 def build_archive(weo_dir):
@@ -131,7 +131,7 @@ def reconstruct(archive, hist, start_month, end_date):
         countries, borrowed = [], set()
         for iso in COUNTRIES:
             vals = {}
-            for f in SDMX_INDICATORS:
+            for f in IMF_FIELDS:
                 # The April 2020 release carried no fiscal series, so a missing
                 # field falls back to the most recent earlier release.
                 year = field_year(f, d.year)
@@ -145,7 +145,7 @@ def reconstruct(archive, hist, start_month, end_date):
             if r is None or any(v is None for v in vals.values()):
                 continue
             c = compute.compute_country(iso, vals["debt"], r, vals["real_growth"],
-                                        vals["inflation"], vals["pb"])
+                                        vals["deflator"], vals["pb"])
             c["r_month"] = month
             countries.append(c)
         if countries:
