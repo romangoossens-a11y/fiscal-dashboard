@@ -57,8 +57,6 @@ function dashboard() {
     period: '1M',
     yieldShift: 0,
     selectedCountry: null,
-    sliderR: 4.0,
-    sliderG: 3.0,
     editingCell: null,
     editValue: 0,
     hasEdits: false,
@@ -241,8 +239,6 @@ function dashboard() {
         this.period = this.periods.some(p => p.key === saved) ? saved : (this.periods[0]?.key || '1M');
 
         this.selectedCountry = this.allCountries[0];
-        this.sliderR = this.allCountries[0].r;
-        this.sliderG = this.allCountries[0].g;
         window._dashboardReady = this;
         this.$nextTick(() => { this.updateChart(); this.updateDrivers(); });
       } catch (e) {
@@ -326,17 +322,15 @@ function dashboard() {
       }
       this.sortCountries();
       this.hasEdits = true;
-      if (this.selectedCountry) this.sliderR = this.selectedCountry.r;
       this.updateChart();
       this.updateDrivers();
     },
 
-    // ── Country selection
+    // ── Country selection. The trajectory always uses the table values,
+    // including any cell edits or yield shift.
     selectCountry(c) {
       this.selectedCountry = c;
-      this.sliderR = c.r;
-      this.sliderG = c.g;
-      setTimeout(() => this.updateChart(), 100);
+      this.$nextTick(() => this.updateChart());
     },
     selectCountryFromTable(c) {
       this.selectCountry(c);
@@ -344,15 +338,6 @@ function dashboard() {
     selectCountryByIso(iso3) {
       const c = this.allCountries.find(c => c.iso3 === iso3);
       if (c) this.selectCountry(c);
-    },
-
-    // ── Sliders
-    resetSliders() {
-      if (this.selectedCountry) {
-        this.sliderR = this.selectedCountry.r;
-        this.sliderG = this.selectedCountry.g;
-        this.updateChart();
-      }
     },
 
     // ── Inline editing
@@ -367,11 +352,7 @@ function dashboard() {
         c[field] = newVal;
         this.recompute(c);
         this.hasEdits = true;
-        if (this.selectedCountry?.iso3 === c.iso3) {
-          if (field === 'r') this.sliderR = newVal;
-          if (field === 'g') this.sliderG = newVal;
-          this.updateChart();
-        }
+        if (this.selectedCountry?.iso3 === c.iso3) this.updateChart();
         this.updateDrivers();
       }
       this.editingCell = null;
@@ -395,25 +376,16 @@ function dashboard() {
       this.allCountries.sort((a, b) => b.fiscal_gap - a.fiscal_gap);
     },
 
-    // ── Sync slider values back to selected country table row
-    syncSliderToTable() {
-      if (!this.selectedCountry) return;
-      this.selectedCountry.r = +this.sliderR.toFixed(2);
-      this.selectedCountry.g = +this.sliderG.toFixed(2);
-      this.recompute(this.selectedCountry);
-      this.hasEdits = true;
-      this.updateDrivers();
-    },
-
+    // Back to the published data: cell edits and the yield shift are undone
+    // everywhere (table, key messages, both charts).
     resetEdits() {
+      const iso = this.selectedCountry?.iso3;
       this.allCountries = this.originalCountries.map(c => ({ ...c }));
       this.hasEdits = false;
       this.yieldShift = 0;
-      this.$nextTick(() => this.updateDrivers());
-      if (this.selectedCountry) {
-        const fresh = this.allCountries.find(c => c.iso3 === this.selectedCountry.iso3);
-        if (fresh) this.selectCountry(fresh);
-      }
+      this.editingCell = null;
+      this.selectedCountry = this.allCountries.find(c => c.iso3 === iso) || this.allCountries[0];
+      this.$nextTick(() => { this.updateChart(); this.updateDrivers(); });
     },
 
     // ── IMF revisions table
@@ -509,7 +481,7 @@ function dashboard() {
       const c = this.selectedCountry;
       const b = c && this.imfBridge?.[c.iso3];
       if (!b || typeof c.debt !== 'number') return null;
-      const r = this.sliderR, g = this.sliderG, d = c.debt;
+      const r = c.r, g = c.g, d = c.debt;
       const simple = d * (1 + r / 100) / (1 + g / 100) - c.pb;
       const interest = (r / 100) * d / (1 + g / 100) - b.net_interest;
       const growth = d / (1 + g / 100) - d / (1 + b.nominal_growth / 100);
@@ -531,7 +503,7 @@ function dashboard() {
       const startDebt = this.selectedCountry.debt;
       const start = this.trajectoryStartYear;
       const years = Array.from({ length: 11 }, (_, i) => String(start + i));
-      const debtPath = this.computeDebtPath(startDebt, this.sliderR, this.sliderG, this.selectedCountry.pb);
+      const debtPath = this.computeDebtPath(startDebt, this.selectedCountry.r, this.selectedCountry.g, this.selectedCountry.pb);
       const imfPath = this.imfDebtPaths?.[this.selectedCountry.iso3] || {};
       const imfData = years.map(y => (typeof imfPath[y] === 'number' ? imfPath[y] : null));
       const finalDebt = debtPath[debtPath.length - 1];

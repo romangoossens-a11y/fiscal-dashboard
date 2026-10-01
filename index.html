@@ -7,7 +7,7 @@
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
-  <link rel="stylesheet" href="assets/app.css?v=3686f89f" />
+  <link rel="stylesheet" href="assets/app.css?v=9a5cf70f" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=4b2f2fe5"></script>
+  <script defer src="assets/app.js?v=5f49fff6"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -309,7 +309,18 @@
           <h2 class="text-base font-semibold text-slate-900 dark:text-white">What Moved the Fiscal Gap</h2>
           <p class="text-sm text-slate-700 dark:text-slate-200 mt-1" x-text="periodMessage"></p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="periodCaption"></p>
+          <p class="text-xs mt-1 text-amber-700 dark:text-amber-400" x-show="hasEdits">
+            Showing your scenario edits, not the published data.</p>
         </div>
+        <div class="flex items-center gap-3">
+        <button @click="resetEdits()" x-show="hasEdits"
+          class="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors whitespace-nowrap">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Reset to published data
+        </button>
         <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs" role="group"
           aria-label="Comparison period">
           <template x-for="p in periods" :key="p.key">
@@ -318,6 +329,7 @@
               :class="period === p.key ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
               x-text="p.label"></button>
           </template>
+        </div>
         </div>
       </div>
       <div class="p-4 sm:p-6">
@@ -420,7 +432,7 @@
       <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
         <h2 class="text-base font-semibold text-slate-900 dark:text-white">Debt Trajectory Simulation</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
-          x-text="'Debt from end ' + trajectoryStartYear + ' to end ' + trajectoryEndYear + ', holding the primary balance, r and g constant, against the ' + imfText + ' forecast'"></p>
+          x-text="'Debt from end ' + trajectoryStartYear + ' to end ' + trajectoryEndYear + ' at the table values of r, g and the primary balance, held constant, against the ' + imfText + ' forecast'"></p>
       </div>
 
       <div class="p-4 sm:p-6">
@@ -439,42 +451,22 @@
               </select>
             </div>
 
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">10Y yield (r)</label>
-                <span
-                  class="text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"
-                  x-text="sliderR.toFixed(2) + '%'"></span>
-              </div>
-              <input type="range" min="0" max="15" step="0.05" class="w-full cursor-pointer" x-model.number="sliderR"
-                :style="'background: ' + (isDark ? '#475569' : '#94a3b8')"
-                @input="sliderR = +$event.target.value; syncSliderToTable(); updateChart()" />
-              <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
-                <span>0%</span><span>7.5%</span><span>15%</span>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Nominal growth (g)</label>
-                <span
-                  class="text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"
-                  x-text="sliderG.toFixed(2) + '%'"></span>
-              </div>
-              <input type="range" min="0" max="10" step="0.05" class="w-full cursor-pointer" x-model.number="sliderG"
-                :style="'background: ' + (isDark ? '#475569' : '#94a3b8')"
-                @input="sliderG = +$event.target.value; syncSliderToTable(); updateChart()" />
-              <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
-                <span>0%</span><span>5%</span><span>10%</span>
-              </div>
-            </div>
-
             <div class="metrics-panel rounded-xl p-4 space-y-2.5 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-500 dark:text-slate-400">10Y yield (r)</span>
+                <span class="font-medium text-slate-600 dark:text-slate-300"
+                  x-text="selectedCountry ? fmt(selectedCountry.r) + '%' : '—'"></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500 dark:text-slate-400">Nominal growth (g)</span>
+                <span class="font-medium text-slate-600 dark:text-slate-300"
+                  x-text="selectedCountry ? fmt(selectedCountry.g) + '%' : '—'"></span>
+              </div>
               <div class="flex justify-between">
                 <span class="text-slate-500 dark:text-slate-400">r − g</span>
                 <span class="font-bold"
-                  :class="(sliderR - sliderG) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-                  x-text="fmtSigned(sliderR - sliderG) + ' pp'"></span>
+                  :class="selectedCountry && selectedCountry.r_g < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                  x-text="selectedCountry ? fmtSigned(selectedCountry.r_g) + ' pp' : '—'"></span>
               </div>
               <div class="flex justify-between">
                 <span class="text-slate-500 dark:text-slate-400" x-text="'Debt, end ' + trajectoryStartYear"></span>
@@ -494,9 +486,12 @@
               </div>
             </div>
 
-            <button @click="resetSliders()"
-              class="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 py-1.5 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">Reset
-              sliders to table values</button>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Uses the table values. To test other assumptions, edit r, g, debt or the primary balance in the table, or
+              shift all yields.
+              <button @click="resetEdits()" x-show="hasEdits"
+                class="block mt-1 text-cyan-700 dark:text-cyan-400 hover:underline">Reset to published data</button>
+            </p>
           </div>
 
           <!-- Chart -->

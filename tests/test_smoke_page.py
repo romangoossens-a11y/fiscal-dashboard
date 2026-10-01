@@ -217,3 +217,82 @@ def test_trajectory_bridge_adds_up(browser, base_url):
     assert "Why the lines differ" in visible_text(page)
     assert problems == []
     page.close()
+
+
+# ── Every control on the page, driven through the interface ───────────────
+
+def table_state(page):
+    return page.evaluate("""() => window._dashboardReady.allCountries.map(c =>
+        [c.iso3, c.r, c.g, c.fiscal_gap].join(':')).sort().join('|')""")
+
+
+def chart_state(page):
+    return page.evaluate("""() => JSON.stringify([
+        Chart.getChart('driversChart').data.datasets.map(d => d.data.map(v => +(+v).toFixed(4))),
+        Chart.getChart('debtChart').data.datasets[0].data.map(v => +v.toFixed(4))])""")
+
+
+def test_cell_edit_then_reset_restores_everything(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    published_table, published_charts = table_state(page), chart_state(page)
+    message = page.locator("#key-messages li").first.inner_text()
+
+    # Edit France's nominal growth in the table
+    page.locator("#fiscal-table tbody tr", has_text="France").locator(".editable-cell").nth(2).click()
+    box = page.locator("#fiscal-table input.table-input")
+    box.fill("6.0")
+    box.press("Enter")
+    page.wait_for_timeout(300)
+    assert table_state(page) != published_table
+    assert chart_state(page) != published_charts
+
+    # Reset from the drivers card
+    page.locator("button", has_text="Reset to published data").nth(1).click()
+    page.wait_for_timeout(300)
+    assert table_state(page) == published_table
+    assert chart_state(page) == published_charts
+    assert page.locator("#key-messages li").first.inner_text() == message
+    assert problems == []
+    page.close()
+
+
+def test_yield_shift_then_reset(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    published = table_state(page)
+    page.locator("#yield-shift").fill("50")
+    page.wait_for_timeout(300)
+    assert table_state(page) != published
+    page.locator("button", has_text="Reset to published data").first.click()
+    page.wait_for_timeout(300)
+    assert table_state(page) == published
+    assert page.locator("#yield-shift").input_value() == "0"
+    assert problems == []
+    page.close()
+
+
+def test_period_toggles_stay_in_sync(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    groups = page.locator("[aria-label='Comparison period']")
+    assert groups.count() == 2
+    for label in ("6M", "1Y", "1M"):
+        groups.nth(1).get_by_role("button", name=label, exact=True).click()
+        page.wait_for_timeout(200)
+        for i in range(2):
+            pressed = groups.nth(i).locator("button[aria-pressed='true']").inner_text()
+            assert pressed == label
+    assert problems == []
+    page.close()
+
+
+def test_theme_toggle_and_country_select(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    page.locator(".theme-toggle").click()
+    page.locator(".theme-toggle").click()
+    assert page.evaluate("!!Chart.getChart('driversChart') && !!Chart.getChart('debtChart')")
+    before = chart_state(page)
+    page.locator("select").select_option("JPN")
+    page.wait_for_timeout(300)
+    assert chart_state(page) != before
+    assert "Japan" in page.locator("select").locator("option:checked").inner_text()
+    assert problems == []
+    page.close()
