@@ -7,7 +7,7 @@
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
-  <link rel="stylesheet" href="assets/app.css?v=4c373492" />
+  <link rel="stylesheet" href="assets/app.css?v=f073bf84" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=869beed1"></script>
+  <script defer src="assets/app.js?v=32ea6993"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -168,8 +168,8 @@
               <th class="text-right px-3 py-2.5 font-semibold" title="Primary balance minus balance needed. Positive means the debt ratio falls">
                 Fiscal gap<span class="block font-normal text-slate-500">pp GDP, + = debt falls</span></th>
               <th class="text-right px-3 py-2.5 font-semibold"
-                title="Fiscal gap if the whole debt stock paid the IMF average interest rate (net interest paid divided by last year's debt) instead of the 10Y yield. Today's arithmetic rather than the margin">
-                Gap at average rate<span class="block font-normal text-slate-500">pp GDP, rate paid on stock</span></th>
+                title="Fiscal gap at the net interest rate: interest the government pays minus interest it receives, divided by last year's debt (IMF). Today's arithmetic rather than the margin">
+                Gap at net interest rate<span class="block font-normal text-slate-500">pp GDP, net interest ÷ debt</span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="Change in the fiscal gap against the selected comparison date, with the largest driver">
                 Change in gap<span class="block font-normal text-slate-500" x-text="'vs ' + (periodLabel || '—') + ', pp, main driver'"></span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="10Y yield at which the debt ratio is stable: g + 100 × primary balance × (1 + g) / debt">
@@ -251,10 +251,10 @@
                   <!-- Balance needed -->
                   <td class="px-3 py-3 text-right text-slate-600 dark:text-slate-300" x-text="fmtSigned(c.pb_star)"></td>
                   <!-- Fiscal gap -->
-                  <td class="px-3 py-3 text-right font-bold text-base cursor-help" :title="gapTitle(c)"
+                  <td data-col="fiscal-gap" class="px-3 py-3 text-right font-bold text-base cursor-help" :title="gapTitle(c)"
                     :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
                     x-text="fmtSigned(c.fiscal_gap)"></td>
-                  <!-- Fiscal gap at the IMF average interest rate -->
+                  <!-- Fiscal gap at the IMF net interest rate -->
                   <td class="px-3 py-3 text-right whitespace-nowrap cursor-help" :title="gapEffectiveTitle(c)">
                     <div class="font-medium"
                       :class="gapEffective(c) === null ? 'text-slate-400' : gapEffective(c) > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : gapEffective(c) < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
@@ -311,13 +311,50 @@
           <span x-show="hasFlags"><span class="flag-dot"></span> marks a data note, hover for detail.</span>
         </p>
         <p x-show="hasEffective">
-          Gap at average rate: the same calculation with the interest rate the government actually pays on its whole
-          stock (IMF net interest divided by last year's debt) instead of the 10Y yield. The headline gap shows where
-          debt dynamics are heading as debt is refinanced at market rates, this one shows today's arithmetic. The
-          difference is the refinancing pressure still to come. The average rate is net of interest received, so it
-          is low where governments hold large financial assets.
+          Gap at net interest rate: the same calculation with the net interest rate on the whole debt stock (IMF
+          interest paid minus interest received, divided by last year's debt) instead of the 10Y yield. The headline
+          gap shows where debt dynamics are heading as debt is refinanced at market rates, this one shows today's
+          arithmetic. The difference is the refinancing pressure still to come. Because interest received is netted
+          off, the rate is low where governments hold large financial assets.
         </p>
         <p>Sources: team calculations, <span x-text="imfText"></span>, FRED.</p>
+      </div>
+    </div>
+
+    <!-- ── Country comparison: one measure at a time ── -->
+    <div class="glass-card fade-in" style="animation-delay: 0.12s" x-show="allCountries.length > 0">
+      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div class="min-w-0 md:flex-1">
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Country Comparison</h2>
+          <p class="text-sm text-slate-700 dark:text-slate-200 mt-1" x-text="currentMetric.note"></p>
+          <p class="text-xs mt-1 text-amber-700 dark:text-amber-400" x-show="hasEdits">
+            Showing your scenario edits, not the published data.</p>
+        </div>
+        <div class="flex items-center gap-3 md:shrink-0 md:justify-end">
+          <button @click="resetEdits()" x-show="hasEdits"
+            class="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 whitespace-nowrap">Reset to published data</button>
+          <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs" role="group"
+            aria-label="Comparison measure">
+            <template x-for="m in metrics" :key="m.key">
+              <button type="button" class="px-2.5 py-1 transition-colors whitespace-nowrap" @click="setMetric(m.key)"
+                :aria-pressed="metric === m.key"
+                :class="metric === m.key ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+                x-text="m.label"></button>
+            </template>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 sm:p-6">
+        <div class="flex flex-wrap gap-x-5 gap-y-1 mb-2 text-xs text-slate-600 dark:text-slate-300">
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-emerald-600"></span>Debt ratio stable or falling</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-rose-600"></span>Debt ratio rising</span>
+          <span class="flex items-center gap-1.5" x-show="metric === 'net'"><span
+              class="w-3 h-3 rounded-full inline-block border-2 border-slate-900 dark:border-slate-100"></span>Fiscal gap at the 10Y yield</span>
+        </div>
+        <div class="relative" style="height: 400px;">
+          <canvas id="compareChart" role="img"
+            :aria-label="'Countries ranked by ' + currentMetric.label + ', ' + currentMetric.unit"></canvas>
+        </div>
       </div>
     </div>
 
@@ -532,7 +569,7 @@
               <p class="font-semibold text-slate-600 dark:text-slate-300"
                 x-text="bridge ? 'Why the lines differ: debt at end ' + bridge.year + ' is ' + fmt(bridge.simple) + '% in the simple projection and ' + fmt(bridge.imf) + '% in the IMF forecast (' + fmtSigned(bridge.total) + ' pp)' : ''"></p>
               <ul class="mt-1 space-y-0.5">
-                <li x-text="bridge ? 'Interest, ' + fmtSigned(bridge.interest) + ' pp: the simple projection charges the ' + fmt(bridge.r) + '% 10Y yield on the whole debt stock. The IMF uses the interest actually paid net of interest received, an average rate of ' + fmt(bridge.rEff) + '%, because most debt was issued at older coupons and governments also earn interest on their assets.' : ''"></li>
+                <li x-text="bridge ? 'Interest, ' + fmtSigned(bridge.interest) + ' pp: the simple projection charges the ' + fmt(bridge.r) + '% 10Y yield on the whole debt stock. The IMF uses interest paid net of interest received, a net interest rate of ' + fmt(bridge.rEff) + '%, because most debt was issued at older coupons and governments also earn interest on their assets.' : ''"></li>
                 <li x-show="bridge && Math.abs(bridge.growth) >= 0.05"
                   x-text="bridge ? 'Growth, ' + fmtSigned(bridge.growth) + ' pp: nominal growth in the table (' + fmt(bridge.g) + '%) has been edited away from the IMF nominal GDP growth (' + fmt(bridge.gNominal) + '%).' : ''"></li>
                 <li x-text="bridge ? 'Other flows, ' + fmtSigned(bridge.other) + ' pp: changes in debt not explained by the deficit, such as asset purchases, privatisation, exchange rate valuation or the timing of tax credits.' : ''"></li>

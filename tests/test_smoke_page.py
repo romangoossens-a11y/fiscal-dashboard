@@ -319,7 +319,7 @@ def test_drivers_toggle_stays_put(browser, base_url):
     page.close()
 
 
-def test_gap_at_average_rate(browser, base_url):
+def test_gap_at_net_interest_rate(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
     result = page.evaluate("""() => {
         const d = window._dashboardReady;
@@ -330,7 +330,7 @@ def test_gap_at_average_rate(browser, base_url):
                  moved: before.filter(([iso, v]) => Math.abs(after[iso] - v) > 1e-9).length };
     }""")
     assert result == {"missing": 0, "moved": 0}
-    assert "At the average interest rate actually paid" in page.locator("#key-messages").inner_text()
+    assert "At the net interest rate governments pay on their debt" in page.locator("#key-messages").inner_text()
     assert problems == []
     page.close()
 
@@ -338,8 +338,7 @@ def test_gap_at_average_rate(browser, base_url):
 def test_next_year_gap_hover(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
     payload_year = real_payload()["projection_year"] + 1
-    titles = page.locator("#fiscal-table tbody td[title^='Fiscal gap ']:not([title^='Fiscal gap if'])").evaluate_all(
-        "els => els.map(e => e.title)")
+    titles = page.locator("#fiscal-table tbody td[data-col='fiscal-gap']").evaluate_all("els => els.map(e => e.title)")
     assert len(titles) == 9
     assert all(f"Next year ({payload_year})" in t for t in titles)
     assert not any(bad in " ".join(titles) for bad in BAD_TEXT)
@@ -347,5 +346,47 @@ def test_next_year_gap_hover(browser, base_url):
     moved = page.evaluate("""() => { const d = window._dashboardReady, c = d.allCountries[0];
         const before = d.nextYearGap(c).gap; d.setYieldShift(50); return d.nextYearGap(c).gap - before; }""")
     assert moved < 0
+    assert problems == []
+    page.close()
+
+
+def test_comparison_chart_measures(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    group = page.locator("[aria-label='Comparison measure']")
+    labels = group.locator("button").all_inner_texts()
+    assert labels == ["Fiscal gap", "Yield cushion", "Gap at net interest rate"]
+    for label in labels:
+        group.get_by_role("button", name=label, exact=True).click()
+        page.wait_for_timeout(200)
+        state = page.evaluate("""() => {
+            const d = window._dashboardReady, ch = Chart.getChart('compareChart'), m = d.currentMetric;
+            const values = ch.data.datasets[0].data;
+            const expected = d.allCountries.map(c => m.value(c)).sort((a, b) => b - a);
+            return { n: values.length, sorted: values.every((v, i) => i === 0 || values[i - 1] >= v),
+                     matches: values.every((v, i) => Math.abs(v - expected[i]) < 1e-9), sets: ch.data.datasets.length };
+        }""")
+        assert state["n"] == 9 and state["sorted"] and state["matches"], (label, state)
+        assert state["sets"] == (2 if label == "Gap at net interest rate" else 1)
+    # Scenario edits flow into the chart, reset restores it
+    group.get_by_role("button", name="Fiscal gap", exact=True).click()
+    page.wait_for_timeout(200)
+    before = page.evaluate("Chart.getChart('compareChart').data.datasets[0].data.join()")
+    page.locator("#yield-shift").fill("50")
+    page.wait_for_timeout(200)
+    assert page.evaluate("Chart.getChart('compareChart').data.datasets[0].data.join()") != before
+    page.locator("button", has_text="Reset to published data").first.click()
+    page.wait_for_timeout(200)
+    assert page.evaluate("Chart.getChart('compareChart').data.datasets[0].data.join()") == before
+    assert problems == []
+    page.close()
+
+
+def test_comparison_chart_without_net_interest_data(browser, base_url):
+    payload = real_payload()
+    for c in payload["countries"]:
+        c.pop("r_eff", None)
+    page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
+    labels = page.locator("[aria-label='Comparison measure'] button").all_inner_texts()
+    assert labels == ["Fiscal gap", "Yield cushion"]
     assert problems == []
     page.close()

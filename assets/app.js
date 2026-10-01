@@ -41,6 +41,7 @@ const DRIVER_INPUTS = { rates: ['r'], real_growth: ['real_growth'], deflator: ['
 function dashboard() {
   let _chart = null;    // stored outside Alpine proxy so assignments persist
   let _drivers = null;  // the "what moved the gap" chart, same reason
+  let _compare = null;  // the country comparison chart, same reason
   return {
     // State
     drivers: DRIVERS,
@@ -60,6 +61,7 @@ function dashboard() {
     imfBridge: {},
     nextYear: {},
     period: '1M',
+    metric: 'gap',
     yieldShift: 0,
     selectedCountry: null,
     editingCell: null,
@@ -192,17 +194,17 @@ function dashboard() {
       const phrase = DRIVER_PHRASES[top.key][top.sum >= 0 ? '1' : '-1'];
       return text + ', ' + (share > 0.95 ? 'entirely' : share > 0.6 ? 'mainly' : 'partly') + ' from ' + phrase + '.';
     },
-    // Today's arithmetic at the average rate paid, against the margin
+    // Today's arithmetic at the net interest rate, against the margin
     get effectiveMessage() {
       const rows = this.allCountries.filter(c => typeof c.r_eff === 'number')
         .map(c => ({ c, eff: this.gapEffective(c), diff: this.gapEffective(c) - c.fiscal_gap }));
       if (!rows.length) return '';
       const rising = rows.filter(x => x.eff < 0).length;
       const top = rows.reduce((a, b) => (b.diff > a.diff ? b : a));
-      return 'At the average interest rate actually paid, the debt ratio is rising in ' +
+      return 'At the net interest rate governments pay on their debt, the debt ratio is rising in ' +
         (rising === rows.length ? 'all ' + rows.length : rising + ' of ' + rows.length) +
         ' countries. Most refinancing pressure still to come: ' + this.countryRef(top.c.name) + ', where the gap is ' +
-        this.fmt(top.diff) + ' pp better at its ' + this.fmt(top.c.r_eff) + '% average rate than at the ' +
+        this.fmt(top.diff) + ' pp better at its ' + this.fmt(top.c.r_eff) + '% net interest rate than at the ' +
         this.fmt(top.c.r) + '% 10Y yield.';
     },
     // What the latest IMF release changed
@@ -228,6 +230,7 @@ function dashboard() {
       // Recreate charts with new theme colours
       if (_chart) { _chart.destroy(); _chart = null; }
       if (_drivers) { _drivers.destroy(); _drivers = null; }
+      if (_compare) { _compare.destroy(); _compare = null; }
       this.updateChart();
       this.updateDrivers();
     },
@@ -259,6 +262,9 @@ function dashboard() {
         let saved = null;
         try { saved = localStorage.getItem('period'); } catch (e) { /* storage blocked */ }
         this.period = this.periods.some(p => p.key === saved) ? saved : (this.periods[0]?.key || '1M');
+        let savedMetric = null;
+        try { savedMetric = localStorage.getItem('metric'); } catch (e) { /* storage blocked */ }
+        this.metric = this.metrics.some(m => m.key === savedMetric) ? savedMetric : 'gap';
 
         this.selectedCountry = this.allCountries[0];
         window._dashboardReady = this;
@@ -292,7 +298,7 @@ function dashboard() {
         this.fmt(n.g) + '% and debt at end ' + (n.year - 1) + ' of ' + this.fmt(n.debt) + '%.' +
         (Math.abs(diff) >= 1 ? ' Large change: this year may be unusual in the IMF forecast.' : '');
     },
-    // Fiscal gap at the IMF average interest rate on the whole debt stock,
+    // Fiscal gap at the IMF net interest rate on the whole debt stock,
     // instead of the 10Y yield: today's arithmetic rather than the margin.
     // The rate only changes with an IMF release, so the yield shift leaves it.
     gapEffective(c) {
@@ -301,8 +307,8 @@ function dashboard() {
     },
     gapEffectiveTitle(c) {
       if (typeof c.r_eff !== 'number') return 'Not available in this data';
-      return 'Fiscal gap if the whole debt stock paid the IMF average interest rate of ' + c.r_eff.toFixed(2) +
-        '% (net interest paid divided by last year\'s debt) instead of the ' + this.fmt(c.r) + '% 10Y yield. ' +
+      return 'Fiscal gap at the net interest rate of ' + c.r_eff.toFixed(2) +
+        '% (IMF interest paid minus interest received, divided by last year\'s debt) instead of the ' + this.fmt(c.r) + '% 10Y yield. ' +
         'The difference with the headline gap, ' + this.fmtSigned(this.gapEffective(c) - c.fiscal_gap) +
         ' pp, is the refinancing pressure still to come as old debt rolls over at market rates.';
     },
@@ -362,6 +368,123 @@ function dashboard() {
       if (!ch) return 'No comparison available';
       const f = v => (v >= 0 ? '+' : '') + v.toFixed(2);
       return DRIVERS.map(d => d.label + ' (' + d.source + ') ' + f(ch[d.key])).join(', ') + ' pp of GDP';
+    },
+    // ── Country comparison chart: one measure at a time
+    get metrics() {
+      const list = [
+        { key: 'gap', label: 'Fiscal gap', unit: 'pp of GDP', digits: 1, value: c => c.fiscal_gap,
+          note: 'Primary balance minus the balance that keeps debt stable at the 10Y yield. Positive: the debt ratio falls.' },
+        { key: 'cushion', label: 'Yield cushion', unit: 'bp', digits: 0, value: c => this.cushionBp(c),
+          note: 'How far the 10Y yield can rise before the debt ratio starts rising. Negative: the yield is already above that level.' },
+        { key: 'net', label: 'Gap at net interest rate', unit: 'pp of GDP', digits: 1, value: c => this.gapEffective(c),
+          note: 'Fiscal gap at the net interest rate on the whole debt stock. The hollow marker is the headline gap at the 10Y yield. The distance between them is the refinancing pressure still to come.' },
+      ];
+      return list.filter(m => m.key !== 'net' || this.hasEffective);
+    },
+    get currentMetric() {
+      return this.metrics.find(m => m.key === this.metric) || this.metrics[0];
+    },
+    setMetric(key) {
+      this.metric = key;
+      try { localStorage.setItem('metric', key); } catch (e) { /* storage blocked */ }
+      this.updateComparison();
+    },
+    updateComparison() {
+      const canvas = document.getElementById('compareChart');
+      if (!canvas || typeof Chart === 'undefined' || !this.allCountries.length) return;
+      const m = this.currentMetric;
+      const rows = this.allCountries
+        .map(c => ({ name: c.name, v: m.value(c), headline: c.fiscal_gap }))
+        .filter(r => typeof r.v === 'number' && !isNaN(r.v))
+        .sort((a, b) => b.v - a.v);
+      const isDark = document.documentElement.classList.contains('dark');
+      const ink = isDark ? '#f1f5f9' : '#0f172a';
+      const tick = isDark ? '#94a3b8' : '#64748b';
+      const grid = isDark ? 'rgba(100,116,139,0.15)' : 'rgba(148,163,184,0.15)';
+      const pos = isDark ? '#34d399' : '#059669', neg = isDark ? '#f87171' : '#dc2626';
+      const f = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(m.digits);
+      const datasets = [{
+        label: m.label, data: rows.map(r => r.v), barThickness: 18, order: 2,
+        backgroundColor: rows.map(r => (r.v >= 0 ? pos : neg)),
+      }];
+      if (m.key === 'net') {
+        datasets.push({
+          type: 'line', label: 'Fiscal gap at the 10Y yield', data: rows.map(r => r.headline), indexAxis: 'y',
+          showLine: false, pointStyle: 'circle', pointRadius: 6, pointHoverRadius: 7,
+          backgroundColor: 'transparent', borderColor: ink, borderWidth: 2, order: 1,
+        });
+      }
+      const all = rows.flatMap(r => (m.key === 'net' ? [r.v, r.headline] : [r.v]));
+      const span = Math.max(0, ...all) - Math.min(0, ...all);
+      const base = m.key === 'cushion' ? 50 : 0.5;
+      // Tick step and axis range on the same grid, so the axis never starts on an odd value
+      const step = span > 12 * base ? base * 4 : span > 6 * base ? base * 2 : base;
+      // Room for the value labels: about 15% of the span beyond each end
+      const pad = Math.max(span * 0.15, base);
+      const xs = { min: Math.floor((Math.min(0, ...all) - pad) / step) * step, max: Math.ceil((Math.max(0, ...all) + pad) / step) * step };
+      const data = { labels: rows.map(r => r.name), datasets };
+      if (_compare) {
+        _compare.data = data;
+        Object.assign(_compare.options.scales.x, xs);
+        _compare.options.scales.x.title.text = m.label + ', ' + m.unit + ' (right = better)';
+        _compare.options.scales.x.ticks.stepSize = step;
+        _compare.options.plugins.valueDigits = m.digits;
+        _compare.update('none');
+        return;
+      }
+      const valueLabel = {
+        id: 'valueLabel',
+        afterDatasetsDraw(chart) {
+          const ds = chart.data.datasets[0], meta = chart.getDatasetMeta(0), ctx = chart.ctx;
+          const digits = chart.options.plugins.valueDigits;
+          ctx.save();
+          ctx.font = '600 12px Inter, sans-serif';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = ink;
+          meta.data.forEach((bar, i) => {
+            const v = ds.data[i];
+            const right = v >= 0;
+            ctx.textAlign = right ? 'left' : 'right';
+            ctx.fillText((v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(digits), bar.x + (right ? 8 : -8), bar.y);
+          });
+          ctx.restore();
+        },
+      };
+      const zeroLine = {
+        id: 'zeroLine',
+        beforeDatasetsDraw(chart) {
+          const x = chart.scales.x.getPixelForValue(0), a = chart.chartArea, ctx = chart.ctx;
+          ctx.save();
+          ctx.strokeStyle = isDark ? 'rgba(241,245,249,0.45)' : 'rgba(15,23,42,0.4)';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(x, a.top); ctx.lineTo(x, a.bottom); ctx.stroke();
+          ctx.restore();
+        },
+      };
+      _compare = new Chart(canvas, {
+        type: 'bar',
+        data,
+        plugins: [zeroLine, valueLabel],
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+          layout: { padding: { left: 8, right: 8 } },
+          plugins: {
+            legend: { display: false },
+            valueDigits: m.digits,
+            tooltip: { callbacks: { label: c => c.dataset.label + ': ' + f(c.raw) + ' ' + this.currentMetric.unit } },
+          },
+          scales: {
+            x: {
+              ...xs, grid: { color: grid }, border: { display: false },
+              ticks: { color: tick, stepSize: step, font: { family: 'Inter', size: 11 },
+                callback: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) },
+              title: { display: true, text: m.label + ', ' + m.unit + ' (right = better)', color: tick, font: { family: 'Inter', size: 11 } },
+            },
+            y: { grid: { display: false }, border: { display: false }, ticks: { color: tick, autoSkip: false, font: { family: 'Inter', size: 12 } } },
+          },
+        },
+      });
+      document.fonts?.ready.then(() => _compare && _compare.update('none'));
     },
     setPeriod(key) {
       this.period = key;
@@ -690,6 +813,10 @@ function dashboard() {
     // ── "What moved the fiscal gap": stacked contributions per country with
     // a dot for the net change.
     updateDrivers() {
+      // Edits, the yield shift, resets and theme changes all refresh the
+      // drivers chart, and the comparison chart must follow them.
+      if (_compare) _compare.options.plugins.valueDigits = this.currentMetric.digits;
+      this.updateComparison();
       const canvas = document.getElementById('driversChart');
       if (!canvas || typeof Chart === 'undefined') return;
       const rows = this.allCountries
