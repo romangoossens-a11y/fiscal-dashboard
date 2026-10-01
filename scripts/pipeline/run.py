@@ -114,10 +114,17 @@ def imf_values(iso, data, label, target, archive, prev, published_on):
     prior = vintages.previous(archive, label) if label in archive["vintages"] else None
     if prior:
         for field in IMF_FIELDS:
+            year = field_year(field, target)
+            history = None
+            if field == "debt":
+                hist_year = year - 1
+                old_h = vintages.value(archive, prior, iso, field, hist_year)
+                new_h = vintages.value(archive, label, iso, field, hist_year)
+                change = None if old_h is None or new_h is None else new_h - old_h
+                history = (hist_year, change, year)
             f = validate.revision_flag(field, values[field],
-                                       vintages.value(archive, prior, iso, field,
-                                                      field_year(field, target)),
-                                       vintages.human(prior))
+                                       vintages.value(archive, prior, iso, field, year),
+                                       vintages.human(prior), vintages.human(label), history)
             if f:
                 flags.append(f)
     return values, flags

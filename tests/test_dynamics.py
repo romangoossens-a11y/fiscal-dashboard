@@ -10,7 +10,8 @@ def snap(r, rg, inf, pb, debt):
 
 
 def gap(x):
-    return x["pb"] - (x["r"] - x["real_growth"] - x["inflation"]) * x["debt"] / 100
+    g = x["real_growth"] + x["inflation"]
+    return x["pb"] - (x["r"] - g) / (1 + g / 100) * x["debt"] / 100
 
 
 def test_decomposition_sums_exactly():
@@ -24,7 +25,7 @@ def test_decomposition_sums_exactly():
 def test_rates_only_move():
     then, now = snap(4.0, 1.5, 2.5, -1.0, 100.0), snap(4.5, 1.5, 2.5, -1.0, 100.0)
     parts = dynamics.decompose(then, now)
-    assert parts["rates"] == pytest.approx(-0.5)
+    assert parts["rates"] == pytest.approx(-0.5 / 1.04)
     assert parts["real_growth"] == parts["inflation"] == parts["fiscal"] == 0
 
 
@@ -60,16 +61,17 @@ def test_verdict(pb, slope, expected):
 def test_revisions_compare_same_year_and_slope():
     arch = {"vintages": {
         "Oct2025": {"release_date": "2025-10-14", "data": {"JPN": {
-            "pb": {"2026": -1.4}, "debt": {"2025": 230.0, "2026": 226.8, "2030": 220.0}}}},
+            "pb": {"2026": -1.4}, "debt": {"2024": 228.0, "2025": 230.0, "2026": 226.8, "2030": 220.0}}}},
         "Apr2026": {"release_date": "2026-04-14", "data": {"JPN": {
-            "pb": {"2026": -1.74}, "debt": {"2025": 207.0, "2026": 204.4, "2030": 200.0}}}},
+            "pb": {"2026": -1.74}, "debt": {"2024": 206.4, "2025": 207.0, "2026": 204.4, "2030": 200.0}}}},
     }}
     rev = dynamics.revisions(arch, "Apr2026", 2026)
     jpn = rev["countries"]["JPN"]
     assert rev["previous"] == "Oct2025" and (rev["slope_from"], rev["slope_to"]) == (2025, 2030)
     assert jpn["pb_change"] == pytest.approx(-0.34)
     # The level fell 22.4 pp but the slope barely moved: a rebase, not better dynamics.
-    assert jpn["debt_level_change"] == pytest.approx(-22.4)
+    assert jpn["debt_level_change"] == pytest.approx(-23.0)  # end of 2025, the table's debt year
+    assert "revised historical data" in jpn["debt_level_note"]
     assert jpn["debt_slope_change"] == pytest.approx(-7.0 - -10.0)
     # Weaker primary balance and a flatter debt decline.
     assert jpn["verdict"] == "deteriorating"
@@ -78,3 +80,13 @@ def test_revisions_compare_same_year_and_slope():
 def test_no_comparison_when_history_is_too_far():
     hist = {"entries": [entry("2026-01-31")]}
     assert dynamics.comparisons(hist, date(2026, 9, 30), {"vintages": {}}, None) == {}
+
+
+def test_bridge_inputs_for_imf_debt_path():
+    arch = {"vintages": {"Apr2026": {"release_date": "2026-04-14", "data": {"JPN": {
+        "debt": {"2026": 204.4}, "pb": {"2026": -1.74}, "overall_balance": {"2026": -2.04},
+        "ngdp": {"2025": 600.0, "2026": 612.6}}}}}}
+    b = dynamics.imf_bridge(arch, "Apr2026", 2026)["JPN"]
+    assert b["net_interest"] == pytest.approx(0.30)
+    assert b["nominal_growth"] == pytest.approx(2.1)
+    assert dynamics.imf_bridge(arch, "Apr2026", 2027) == {}

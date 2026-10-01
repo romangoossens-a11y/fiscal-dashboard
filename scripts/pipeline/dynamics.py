@@ -14,8 +14,13 @@ revisions: how the IMF changed its view between its two latest releases, for
 
 from datetime import date
 
+from itertools import combinations
+from math import factorial
+
 from . import vintages
-from .config import COUNTRIES
+from .compute import fiscal_gap
+from .config import COUNTRIES, LARGE_IMF_REVISION
+from .validate import debt_revision_note
 
 PERIODS = (("1M", 1), ("6M", 6), ("1Y", 12))
 
@@ -70,29 +75,43 @@ def comparisons(history, run_date: date, archive, current_label):
     return out
 
 
+# Players in the decomposition and the inputs each one moves.
+DRIVERS = {
+    "rates": ("r",),
+    "real_growth": ("real_growth",),
+    "inflation": ("inflation",),
+    "fiscal": ("pb", "debt"),
+}
+
+
 def decompose(then, now):
     """Split the change in fiscal gap into four contributions that sum exactly.
 
-    gap = pb - (r - g) x debt / 100, with g = real growth + inflation.
-    Midpoint weights make the split exact:
-      rates       = -mean(debt) x change in r / 100
-      real growth =  mean(debt) x change in real growth / 100
-      inflation   =  mean(debt) x change in inflation / 100
-      fiscal      =  change in pb - mean(r - g) x change in debt / 100
+    The gap is pb - (r - g) / (1 + g) x debt / 100, which is not linear in its
+    inputs, so each driver gets its Shapley value: the average effect of
+    switching its inputs from then to now, over every order in which the
+    other drivers could be switched. Mirrored in assets/app.js.
     """
-    def gap(x):
-        return x["pb"] - (x["r"] - x["real_growth"] - x["inflation"]) * x["debt"] / 100
+    keys = list(DRIVERS)
+    n = len(keys)
 
-    d = (then["debt"] + now["debt"]) / 2
-    rg = ((then["r"] - then["real_growth"] - then["inflation"])
-          + (now["r"] - now["real_growth"] - now["inflation"])) / 2
-    parts = {
-        "rates": -d * (now["r"] - then["r"]) / 100,
-        "real_growth": d * (now["real_growth"] - then["real_growth"]) / 100,
-        "inflation": d * (now["inflation"] - then["inflation"]) / 100,
-        "fiscal": (now["pb"] - then["pb"]) - rg * (now["debt"] - then["debt"]) / 100,
-    }
-    parts["net"] = gap(now) - gap(then)
+    def gap_with(moved):
+        x = dict(then)
+        for k in moved:
+            for field in DRIVERS[k]:
+                x[field] = now[field]
+        return fiscal_gap(x["r"], x["real_growth"], x["inflation"], x["pb"], x["debt"])
+
+    parts = {}
+    for k in keys:
+        others = [o for o in keys if o != k]
+        total = 0.0
+        for size in range(n):
+            weight = factorial(size) * factorial(n - size - 1) / factorial(n)
+            for subset in combinations(others, size):
+                total += weight * (gap_with(subset + (k,)) - gap_with(subset))
+        parts[k] = total
+    parts["net"] = gap_with(tuple(keys)) - gap_with(())
     return parts
 
 
@@ -135,8 +154,8 @@ def revisions(archive, label, target_year):
             "pb_old": pb_old, "pb_new": pb_new, "pb_change": pb_change,
             "debt_slope_old": slope_old, "debt_slope_new": slope_new,
             "debt_slope_change": slope_change,
-            "debt_level_change": diff(v(label, iso, "debt", target_year),
-                                      v(prior, iso, "debt", target_year)),
+            "debt_level_change": diff(v(label, iso, "debt", base), v(prior, iso, "debt", base)),
+            "debt_level_note": debt_level_note(archive, label, prior, iso, base),
             "verdict": verdict(pb_change, slope_change),
         }
     return {
@@ -164,9 +183,45 @@ def imf_debt_paths(archive, label, from_year):
     return out
 
 
+def imf_bridge(archive, label, forecast_year):
+    """Inputs to explain the gap between the simple projection and the IMF
+    debt path in the forecast year: IMF debt, net interest and nominal GDP
+    growth. The page combines them with the current r and g."""
+    out = {}
+
+    def v(iso, field, year):
+        return vintages.value(archive, label, iso, field, year)
+
+    for iso in COUNTRIES:
+        debt = v(iso, "debt", forecast_year)
+        pb, overall = v(iso, "pb", forecast_year), v(iso, "overall_balance", forecast_year)
+        gdp, gdp_prev = v(iso, "ngdp", forecast_year), v(iso, "ngdp", forecast_year - 1)
+        if None in (debt, pb, overall, gdp, gdp_prev) or not gdp_prev:
+            continue
+        out[iso] = {
+            "year": forecast_year,
+            "imf_debt": debt,
+            "net_interest": round(pb - overall, 3),
+            "nominal_growth": round((gdp / gdp_prev - 1) * 100, 3),
+        }
+    return out
+
+
+def debt_level_note(archive, label, prior, iso, year):
+    old, new = vintages.value(archive, prior, iso, "debt", year), vintages.value(archive, label, iso, "debt", year)
+    if old is None or new is None or abs(new - old) < LARGE_IMF_REVISION["debt"]:
+        return None
+    old_h, new_h = (vintages.value(archive, prior, iso, "debt", year - 1),
+                    vintages.value(archive, label, iso, "debt", year - 1))
+    hist = None if old_h is None or new_h is None else new_h - old_h
+    return debt_revision_note(new - old, hist, year, year - 1,
+                              vintages.human(prior), vintages.human(label))
+
+
 def attach(output, history, archive, run_date: date):
     label = output["imf"]["vintage"]
     output["comparisons"] = comparisons(history, run_date, archive, label)
     output["revisions"] = revisions(archive, label, output["projection_year"])
     output["imf_debt_paths"] = imf_debt_paths(archive, label, output["debt_year"])
+    output["imf_bridge"] = imf_bridge(archive, label, output["projection_year"])
     return output

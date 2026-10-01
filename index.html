@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=9255b527"></script>
+  <script defer src="assets/app.js?v=4b2f2fe5"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -163,13 +163,13 @@
                 10Y yield (r)<span class="block font-normal text-slate-500" x-text="'%, ' + monthText + ' avg'"></span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="10Y yield minus nominal growth. Above zero, interest outpaces growth and debt grows on its own">
                 r − g<span class="block font-normal text-slate-500">pp</span></th>
-              <th class="text-right px-3 py-2.5 font-semibold" title="Primary balance that keeps the debt ratio stable: (r − g) × debt / 100">
+              <th class="text-right px-3 py-2.5 font-semibold" title="Primary balance that keeps the debt ratio stable: (r − g) / (1 + g) × debt / 100">
                 Balance needed<span class="block font-normal text-slate-500">to stabilise debt, % GDP</span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="Primary balance minus balance needed. Positive means the debt ratio falls">
                 Fiscal gap<span class="block font-normal text-slate-500">pp GDP, + = debt falls</span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="Change in the fiscal gap against the selected comparison date, with the largest driver">
                 Change in gap<span class="block font-normal text-slate-500" x-text="'vs ' + (periodLabel || '—') + ', pp, main driver'"></span></th>
-              <th class="text-right px-3 py-2.5 font-semibold" title="10Y yield at which the debt ratio is stable: g + 100 × primary balance / debt">
+              <th class="text-right px-3 py-2.5 font-semibold" title="10Y yield at which the debt ratio is stable: g + 100 × primary balance × (1 + g) / debt">
                 Breakeven yield<span class="block font-normal text-slate-500">%</span></th>
               <th class="text-right px-3 sm:px-6 py-2.5 font-semibold" title="Breakeven yield minus actual yield. Positive means yields can rise this much before debt starts rising">
                 Yield cushion<span class="block font-normal text-slate-500">bp, + = room</span></th>
@@ -285,7 +285,8 @@
       <div
         class="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/40 space-y-1">
         <p>
-          <strong>How to read:</strong> balance needed = (r − g) × debt / 100. Fiscal gap = primary balance minus
+          <strong>How to read:</strong> balance needed = (r − g) / (1 + g) × debt / 100, with debt at the end of last
+          year. Fiscal gap = primary balance minus
           balance needed: positive means the debt ratio falls. Breakeven yield is the 10Y yield at which the debt
           ratio is stable, and the yield cushion is how far the actual yield is below it. Main driver tags:
           <span class="px-1 rounded bg-orange-100 text-orange-900 dark:bg-orange-950/60 dark:text-orange-200">yields</span> market,
@@ -394,8 +395,7 @@
                 <td class="px-3 py-2.5 text-right font-medium whitespace-nowrap"
                   :class="row.debt_slope_change < -1 ? 'text-emerald-600 dark:text-emerald-400' : row.debt_slope_change > 1 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'">
                   <span x-text="fmtSigned(row.debt_slope_change)"></span>
-                  <span class="flag-dot" x-show="Math.abs(row.debt_level_change || 0) >= 5"
-                    :title="'Debt level revised ' + fmtSigned(row.debt_level_change) + ' pp, likely a statistical rebase. Comparing the projected rise excludes it.'"></span>
+                  <span class="flag-dot" x-show="row.debt_level_note" :title="row.debt_level_note"></span>
                 </td>
                 <td class="px-4 sm:px-6 py-2.5 text-right">
                   <span class="px-2 py-0.5 rounded-md text-xs font-medium cursor-help" :class="verdictClass(row.verdict)"
@@ -511,10 +511,18 @@
             <div class="relative" style="height: 360px;">
               <canvas id="debtChart" role="img" aria-label="Projected debt ratio of the selected country"></canvas>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">
-              The simple projection applies today's 10Y yield to the whole debt stock, so it moves faster than reality
-              for countries whose debt carries older, lower coupons. The IMF line uses its full set of assumptions.
-            </p>
+            <!-- Bridge: why the two lines differ in the first year, built from the data -->
+            <div class="mt-3 text-xs text-slate-500 dark:text-slate-400" x-show="bridge">
+              <p class="font-semibold text-slate-600 dark:text-slate-300"
+                x-text="bridge ? 'Why the lines differ: debt at end ' + bridge.year + ' is ' + fmt(bridge.simple) + '% in the simple projection and ' + fmt(bridge.imf) + '% in the IMF forecast (' + fmtSigned(bridge.total) + ' pp)' : ''"></p>
+              <ul class="mt-1 space-y-0.5">
+                <li x-text="bridge ? 'Interest, ' + fmtSigned(bridge.interest) + ' pp: the simple projection charges the ' + fmt(bridge.r) + '% 10Y yield on the whole debt stock. The IMF uses the interest actually paid net of interest received, an average rate of ' + fmt(bridge.rEff) + '%, because most debt was issued at older coupons and governments also earn interest on their assets.' : ''"></li>
+                <li x-text="bridge ? 'Growth, ' + fmtSigned(bridge.growth) + ' pp: the simple projection uses real growth plus CPI inflation (' + fmt(bridge.g) + '%). The IMF uses nominal GDP growth (' + fmt(bridge.gNominal) + '%), which runs on the GDP deflator.' : ''"></li>
+                <li x-text="bridge ? 'Other flows, ' + fmtSigned(bridge.other) + ' pp: changes in debt not explained by the deficit, such as asset purchases, privatisation, exchange rate valuation or the timing of tax credits.' : ''"></li>
+              </ul>
+              <p class="mt-1">Positive means the simple projection is higher. Beyond the first year the gap compounds,
+                mainly through interest.</p>
+            </div>
           </div>
         </div>
       </div>

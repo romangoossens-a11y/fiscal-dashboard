@@ -23,6 +23,17 @@ const DRIVER_PHRASES = {
 // Changes smaller than this, in pp of GDP, count as no change.
 const CHANGE_THRESHOLD = 0.05;
 
+// Debt arithmetic, exact form of d_t = d_(t-1) (1 + r) / (1 + g) - pb_t with
+// debt at the end of last year. Mirrors scripts/pipeline/compute.py.
+function stabilisingBalance(r, g, debt) {
+  return (r - g) / (1 + g / 100) * debt / 100;
+}
+function fiscalGap(x) {
+  return x.pb - stabilisingBalance(x.r, x.real_growth + x.inflation, x.debt);
+}
+// Inputs moved by each driver in the decomposition
+const DRIVER_INPUTS = { rates: ['r'], real_growth: ['real_growth'], inflation: ['inflation'], fiscal: ['pb', 'debt'] };
+
 function dashboard() {
   let _chart = null;    // stored outside Alpine proxy so assignments persist
   let _drivers = null;  // the "what moved the gap" chart, same reason
@@ -42,6 +53,7 @@ function dashboard() {
     comparisons: {},
     revisions: null,
     imfDebtPaths: {},
+    imfBridge: {},
     period: '1M',
     yieldShift: 0,
     selectedCountry: null,
@@ -223,6 +235,7 @@ function dashboard() {
         this.comparisons = data.comparisons || {};
         this.revisions = data.revisions?.countries ? data.revisions : null;
         this.imfDebtPaths = data.imf_debt_paths || {};
+        this.imfBridge = data.imf_bridge || {};
         let saved = null;
         try { saved = localStorage.getItem('period'); } catch (e) { /* storage blocked */ }
         this.period = this.periods.some(p => p.key === saved) ? saved : (this.periods[0]?.key || '1M');
@@ -238,33 +251,45 @@ function dashboard() {
       }
     },
 
-    // ── Market threshold. Breakeven = g + 100 x pb / debt is the 10Y yield
-    // at which the debt ratio is stable. Fiscal gap = cushion x debt / 100.
+    // ── Market threshold. Breakeven = g + 100 x pb x (1 + g) / debt is the
+    // 10Y yield at which the debt ratio is stable.
     breakeven(c) {
-      return c.g + 100 * c.pb / c.debt;
+      return c.g + 100 * c.pb * (1 + c.g / 100) / c.debt;
     },
     cushionBp(c) {
       return Math.round((this.breakeven(c) - c.r) * 100);
     },
     breakevenTitle(c) {
       return 'Debt ratio stable at a 10Y yield of ' + this.breakeven(c).toFixed(2) + '%. ' +
-        'Each +10 bp on the yield changes the fiscal gap by ' + (-c.debt / 1000).toFixed(2) + ' pp of GDP.';
+        'Each +10 bp on the yield changes the fiscal gap by ' + (-c.debt / (1000 * (1 + c.g / 100))).toFixed(2) + ' pp of GDP.';
     },
 
     // ── Change in the fiscal gap against the selected comparison snapshot,
-    // split into four contributions that sum exactly (midpoint weights).
+    // split into four contributions that sum exactly. The gap is not linear
+    // in its inputs, so each driver gets its Shapley value: its average
+    // effect over every order in which the drivers could be switched.
     // Mirrors decompose() in scripts/pipeline/dynamics.py.
     decompose(then, now) {
-      const gap = x => x.pb - (x.r - x.real_growth - x.inflation) * x.debt / 100;
-      const d = (then.debt + now.debt) / 2;
-      const rg = ((then.r - then.real_growth - then.inflation) + (now.r - now.real_growth - now.inflation)) / 2;
-      return {
-        rates: -d * (now.r - then.r) / 100,
-        real_growth: d * (now.real_growth - then.real_growth) / 100,
-        inflation: d * (now.inflation - then.inflation) / 100,
-        fiscal: (now.pb - then.pb) - rg * (now.debt - then.debt) / 100,
-        net: gap(now) - gap(then),
+      const keys = Object.keys(DRIVER_INPUTS);
+      const n = keys.length;
+      const fact = k => (k <= 1 ? 1 : k * fact(k - 1));
+      const gapWith = moved => {
+        const x = { ...then };
+        for (const k of moved) for (const f of DRIVER_INPUTS[k]) x[f] = now[f];
+        return fiscalGap(x);
       };
+      const subsets = list => list.reduce((acc, item) => acc.concat(acc.map(s => [...s, item])), [[]]);
+      const parts = {};
+      for (const k of keys) {
+        let total = 0;
+        for (const s of subsets(keys.filter(o => o !== k))) {
+          const w = fact(s.length) * fact(n - s.length - 1) / fact(n);
+          total += w * (gapWith([...s, k]) - gapWith(s));
+        }
+        parts[k] = total;
+      }
+      parts.net = gapWith(keys) - gapWith([]);
+      return parts;
     },
     change(c) {
       const then = this.reference?.countries?.[c.iso3];
@@ -361,7 +386,7 @@ function dashboard() {
       // decomposition stays consistent with the table.
       if (typeof c.inflation === 'number') c.real_growth = c.g - c.inflation;
       c.r_g = +(c.r - c.g).toFixed(2);
-      c.pb_star = +((c.r / 100 - c.g / 100) * c.debt).toFixed(2);
+      c.pb_star = +stabilisingBalance(c.r, c.g, c.debt).toFixed(2);
       c.fiscal_gap = +(c.pb - c.pb_star).toFixed(2);
       c.sustainable = c.fiscal_gap >= 0;
       if (sort) this.sortCountries();
@@ -475,6 +500,26 @@ function dashboard() {
     },
     get hasImfPath() {
       return !!(this.selectedCountry && this.imfDebtPaths?.[this.selectedCountry.iso3]);
+    },
+    // Why the simple projection and the IMF path differ in the forecast year.
+    // Debt identity: d_t = d_(t-1) / (1 + g) + interest_t - pb_t + other flows.
+    // The simple projection charges r on the whole stock and uses real growth
+    // plus CPI. The IMF uses its own net interest and nominal GDP growth.
+    get bridge() {
+      const c = this.selectedCountry;
+      const b = c && this.imfBridge?.[c.iso3];
+      if (!b || typeof c.debt !== 'number') return null;
+      const r = this.sliderR, g = this.sliderG, d = c.debt;
+      const simple = d * (1 + r / 100) / (1 + g / 100) - c.pb;
+      const interest = (r / 100) * d / (1 + g / 100) - b.net_interest;
+      const growth = d / (1 + g / 100) - d / (1 + b.nominal_growth / 100);
+      const total = simple - b.imf_debt;
+      return {
+        year: b.year, simple, imf: b.imf_debt, total, interest, growth,
+        other: total - interest - growth,
+        rEff: b.net_interest * (1 + b.nominal_growth / 100) / d * 100,
+        gNominal: b.nominal_growth, r, g,
+      };
     },
 
     updateChart() {

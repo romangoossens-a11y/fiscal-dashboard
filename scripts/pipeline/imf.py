@@ -10,7 +10,7 @@ the current dataflow is, so vintages.py works that out.
 """
 
 from . import http
-from .config import (COUNTRIES, DATAMAPPER_BASE, DATAMAPPER_INDICATORS,
+from .config import (AUX_INDICATORS, COUNTRIES, DATAMAPPER_BASE, DATAMAPPER_INDICATORS,
                      SDMX_AGENCY, SDMX_BASE, SDMX_CURRENT_FLOW, SDMX_INDICATORS)
 
 
@@ -46,7 +46,7 @@ def fetch_sdmx(dataflow=SDMX_CURRENT_FLOW, countries=COUNTRIES):
     """Fetch all four fields for one WEO dataflow. One call per indicator,
     because the API handles a single indicator filter more reliably."""
     out = {}
-    for field, code in SDMX_INDICATORS.items():
+    for field, code in {**SDMX_INDICATORS, **AUX_INDICATORS}.items():
         url = f"{SDMX_BASE}/data/dataflow/{SDMX_AGENCY}/{dataflow}/+/*"
         resp = http.get(url, params={"c[COUNTRY]": ",".join(countries),
                                      "c[INDICATOR]": code}, timeout=120)

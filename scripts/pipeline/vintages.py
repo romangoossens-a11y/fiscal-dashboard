@@ -107,6 +107,13 @@ def register(archive, data, run_date: date, source):
     """
     last = latest(archive)
     if last and same_data(data, archive["vintages"][last]["data"]):
+        # Same release. Add any series the archive does not hold yet, for
+        # example after a new indicator is added to the pipeline.
+        stored = archive["vintages"][last]["data"]
+        for iso, fields in window(data, vintage_year(last)).items():
+            for field, years in fields.items():
+                if field not in stored.get(iso, {}):
+                    stored.setdefault(iso, {})[field] = years
         return last, "unchanged"
     label = label_for(run_date)
     entry = {

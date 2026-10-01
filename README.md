@@ -20,9 +20,9 @@ All variables are in **nominal terms**.
 
 | Formula | Description |
 |---|---|
-| `pb* = (r − g) / 100 × d` | Debt-stabilising primary balance |
+| `pb* = (r − g) / (1 + g) × d / 100` | Primary balance that stabilises debt (d at the end of last year) |
 | `Fiscal Gap = pb − pb*` | Positive = sustainable, negative = needs consolidation |
-| `Breakeven r = g + 100 × pb / d` | 10Y yield at which the debt ratio is stable. Gap = (breakeven − r) × d / 100 |
+| `Breakeven r = g + 100 × pb × (1 + g) / d` | 10Y yield at which the debt ratio is stable |
 | `d_t = d_{t−1} × (1+r/100) / (1+g/100) − pb` | Debt dynamics (chart) |
 
 ## Data Sources

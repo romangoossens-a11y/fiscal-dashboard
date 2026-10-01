@@ -41,7 +41,10 @@ python -m pytest -q
 - `scripts/backfill.py`: one-off rebuild of both files from local WEO files (imf.org blocks scripts)
 - `pipeline/dynamics.py` adds `comparisons` (history snapshots nearest to 1M, 6M, 1Y ago, plus the last one before the current IMF release) and `revisions` (current vs previous IMF release, same calendar year: pb level, debt slope from t-1 to t+4, verdict) to `fiscal_data.json`
 - The page splits the change in the gap into rates, real growth, inflation and fiscal stance with `decompose()` in `assets/app.js`, which mirrors `dynamics.decompose()`. Midpoint weights, so the parts sum exactly. Keep the two in step
-- Breakeven yield = g + 100 x pb / debt. Fiscal gap = (breakeven - r) x debt / 100. A +10 bp yield move changes the gap by -debt / 1000
+- Breakeven yield = g + 100 x pb x (1 + g) / debt. A +10 bp yield move changes the gap by -debt / (1000 (1 + g))
+- The change decomposition uses Shapley values over four drivers (rates, real growth, inflation, fiscal = pb and debt), because the exact gap is not linear. Python `dynamics.decompose()` and JS `decompose()` must stay identical
+- `imf_bridge` (IMF debt, net interest = primary minus overall balance, nominal GDP growth) feeds the trajectory footnote explaining simple vs IMF debt in the first year. Series come from `AUX_INDICATORS`
+- Large debt revisions get a generated note (`validate.debt_revision_note`) saying whether the previous year moved too (revised history) or not (new outlook). It updates with every release
 - **Debt is end of previous year** (`debt_year` = forecast year minus 1), as in d_t = d_(t-1) x (1 + r) / (1 + g) - pb_t. History uses the same definition. `config.field_year()` maps each IMF field to its year
 - **No dates or release names in the markup.** Every year, month and IMF release on the page is built in `assets/app.js` from the data, with a neutral fallback when a field is missing. The key messages are generated sentences that drop out when their inputs are missing. Browser tests check the page with blocks removed, with an old schema, and with shifted years
 - `npm run build` stamps asset links in `index.html` with a content hash (`?v=`), so a deploy cannot mix a new page with cached old scripts
@@ -49,7 +52,7 @@ python -m pytest -q
 
 ## Fiscal Framework (Nominal Terms)
 - `g = real_growth + inflation` (nominal growth)
-- `pb* = (r/100 - g/100) × debt` (debt-stabilising primary balance)
+- `pb* = (r - g) / (1 + g) × d_(t-1) / 100` (stabilising primary balance, exact form, debt at end of last year)
 - `fiscal_gap = pb - pb*` (positive = sustainable)
 - `d_t = d_{t-1} × (1 + r/100) / (1 + g/100) - pb` (debt dynamics for chart)
 

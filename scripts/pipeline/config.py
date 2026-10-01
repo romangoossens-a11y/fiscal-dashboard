@@ -51,6 +51,14 @@ SDMX_INDICATORS = {
     "pb": "GGXONLB_NGDP",         # general government primary balance, % GDP
     "debt": "GGXWDG_NGDP",        # general government gross debt, % GDP
 }
+# Archived alongside, but not part of the fiscal gap. They explain why the
+# IMF debt path differs from the simple projection: the overall balance gives
+# net interest (primary minus overall), nominal GDP gives nominal growth on
+# the GDP deflator.
+AUX_INDICATORS = {
+    "overall_balance": "GGXCNL_NGDP",  # general government net lending, % GDP
+    "ngdp": "NGDP",                    # nominal GDP, national currency
+}
 DATAMAPPER_INDICATORS = dict(SDMX_INDICATORS, pb="GGXONLB_G01_GDP_PT")
 
 # Year of each IMF field relative to the forecast year t. Debt dynamics run
@@ -85,7 +93,7 @@ LARGE_IMF_REVISION = {          # pp, same target year across two releases
     "real_growth": 2.0,
     "inflation": 2.0,
     "pb": 2.0,
-    "debt": 10.0,
+    "debt": 5.0,
 }
 
 # A yield month is expected to be the previous calendar month from this day

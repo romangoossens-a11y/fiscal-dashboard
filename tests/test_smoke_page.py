@@ -114,11 +114,11 @@ def test_yield_shift_moves_gap_by_debt_sensitivity(browser, base_url):
     moved = page.evaluate("""() => {
         const d = window._dashboardReady;
         d.setYieldShift(0);  // baseline recomputed from the displayed inputs
-        const before = Object.fromEntries(d.allCountries.map(c => [c.iso3, [c.fiscal_gap, c.debt]]));
+        const before = Object.fromEntries(d.allCountries.map(c => [c.iso3, [c.fiscal_gap, c.debt / (1 + c.g / 100)]]));
         d.setYieldShift(10);
         return d.allCountries.map(c => c.fiscal_gap - before[c.iso3][0] + before[c.iso3][1] / 1000);
     }""")
-    # +10 bp moves each gap by -debt / 1000, up to 2 dp rounding
+    # +10 bp moves each gap by -debt / (1 + g) / 1000, up to 2 dp rounding
     assert all(abs(x) < 0.011 for x in moved), moved
     assert problems == []
     page.close()
@@ -199,5 +199,21 @@ def test_labels_follow_the_data(browser, base_url):
     text = visible_text(page)
     for expected in ("October 2030", "end 2030", "Feb 2031"):
         assert expected in text
+    assert problems == []
+    page.close()
+
+
+def test_trajectory_bridge_adds_up(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""() => {
+        const d = window._dashboardReady;
+        return d.allCountries.map(c => {
+            d.selectCountryByIso(c.iso3);
+            const b = d.bridge;
+            return b ? Math.abs(b.interest + b.growth + b.other - b.total) : null;
+        });
+    }""")
+    assert all(x is not None and x < 1e-9 for x in result)
+    assert "Why the lines differ" in visible_text(page)
     assert problems == []
     page.close()

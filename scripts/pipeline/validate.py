@@ -68,11 +68,28 @@ def yield_move_flag(new_r, new_month, prev_r, prev_month):
     return None
 
 
-def revision_flag(field, new, old, old_label):
+def debt_revision_note(level_change, history_change, year, history_year, old_label, new_label):
+    """Plain explanation of a large debt revision between two IMF releases.
+
+    If an already published year moved by a similar amount, the IMF revised
+    its historical data (often a GDP benchmark revision), not its outlook.
+    """
+    text = (f"Debt for {year} revised {level_change:+.1f} pp between the {old_label} "
+            f"and {new_label} IMF releases.")
+    if history_change is not None and abs(history_change) >= 0.5 * abs(level_change) \
+            and history_change * level_change > 0:
+        return text + (f" {history_year} was revised by {history_change:+.1f} pp too, so this "
+                       f"reflects revised historical data, not a change in outlook.")
+    return text + f" Past years barely moved, so this reflects a change in the IMF outlook."
+
+
+def revision_flag(field, new, old, old_label, new_label=None, history=None):
+    """Flag a large revision. history = (history_year, change) for debt."""
     if new is None or old is None:
         return None
-    if abs(new - old) > LARGE_IMF_REVISION[field]:
-        return flag(field, LARGE_REVISION,
-                    f"Revised {new - old:+.1f} pp from the {old_label} release, "
-                    f"possibly a statistical rebase")
-    return None
+    if abs(new - old) <= LARGE_IMF_REVISION[field]:
+        return None
+    if field == "debt" and history and new_label:
+        return flag(field, LARGE_REVISION, debt_revision_note(
+            new - old, history[1], history[2], history[0], old_label, new_label))
+    return flag(field, LARGE_REVISION, f"Revised {new - old:+.1f} pp from the {old_label} IMF release")
