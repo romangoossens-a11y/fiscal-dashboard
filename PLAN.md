@@ -68,3 +68,4 @@ Tick items off as they land.
 - [x] Remove trajectory sliders, reset on the drivers card
 - [x] GDP deflator instead of CPI (derived from IMF nominal GDP), drivers toggle pinned top right
 - [x] Fiscal gap at the IMF average interest rate next to the headline gap (option 3, no toggle). Single forecast year kept, no averaging
+- [x] Hover on the fiscal gap with next year's gap at the current yield

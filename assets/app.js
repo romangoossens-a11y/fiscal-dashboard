@@ -58,6 +58,7 @@ function dashboard() {
     revisions: null,
     imfDebtPaths: {},
     imfBridge: {},
+    nextYear: {},
     period: '1M',
     yieldShift: 0,
     selectedCountry: null,
@@ -254,6 +255,7 @@ function dashboard() {
         this.revisions = data.revisions?.countries ? data.revisions : null;
         this.imfDebtPaths = data.imf_debt_paths || {};
         this.imfBridge = data.imf_bridge || {};
+        this.nextYear = data.next_year || {};
         let saved = null;
         try { saved = localStorage.getItem('period'); } catch (e) { /* storage blocked */ }
         this.period = this.periods.some(p => p.key === saved) ? saved : (this.periods[0]?.key || '1M');
@@ -271,6 +273,24 @@ function dashboard() {
     // 10Y yield at which the debt ratio is stable.
     breakeven(c) {
       return c.g + 100 * c.pb * (1 + c.g / 100) / c.debt;
+    },
+    // Next year's fiscal gap: IMF forecasts for next year at the current
+    // 10Y yield (the yield shift flows through). Shown on hover, so a one
+    // year quirk in the forecast is visible without averaging it away.
+    nextYearGap(c) {
+      const n = this.nextYear?.[c.iso3];
+      if (!n || typeof c.r !== 'number') return null;
+      return { year: n.year, gap: fiscalGap({ ...n, r: c.r }), g: nominalGrowth(n.real_growth, n.deflator), pb: n.pb, debt: n.debt };
+    },
+    gapTitle(c) {
+      const n = this.nextYearGap(c);
+      const now = 'Fiscal gap ' + this.fmtSigned(c.fiscal_gap) + ' pp of GDP.';
+      if (!n) return now;
+      const diff = n.gap - c.fiscal_gap;
+      return now + ' Next year (' + n.year + ') at the same ' + this.fmt(c.r) + '% 10Y yield: ' + this.fmtSigned(n.gap) +
+        ' (' + this.fmtSigned(diff) + ' pp), with IMF primary balance ' + this.fmtSigned(n.pb) + ', nominal growth ' +
+        this.fmt(n.g) + '% and debt at end ' + (n.year - 1) + ' of ' + this.fmt(n.debt) + '%.' +
+        (Math.abs(diff) >= 1 ? ' Large change: this year may be unusual in the IMF forecast.' : '');
     },
     // Fiscal gap at the IMF average interest rate on the whole debt stock,
     // instead of the 10Y yield: today's arithmetic rather than the margin.

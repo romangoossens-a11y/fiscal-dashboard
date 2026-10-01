@@ -97,3 +97,12 @@ def test_effective_rate():
     assert dynamics.effective_rate(0.307, 2.086, 206.5) == pytest.approx(0.152, abs=1e-3)
     assert dynamics.effective_rate(None, 2.0, 100.0) is None
     assert dynamics.effective_rate(1.0, 2.0, 0) is None
+
+
+def test_next_year_inputs_use_end_of_this_year_debt():
+    arch = {"vintages": {"Apr2026": {"release_date": "2026-04-14", "data": {"JPN": {
+        "real_growth": {"2027": 0.62}, "deflator": {"2027": 2.69}, "pb": {"2027": -2.1},
+        "debt": {"2026": 204.4, "2027": 203.0}}}}}}
+    nxt = dynamics.next_year_inputs(arch, "Apr2026", 2026)["JPN"]
+    assert nxt == {"real_growth": 0.62, "deflator": 2.69, "pb": -2.1, "debt": 204.4, "year": 2027}
+    assert dynamics.next_year_inputs(arch, "Apr2026", 2027) == {}

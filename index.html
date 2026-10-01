@@ -7,7 +7,7 @@
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
-  <link rel="stylesheet" href="assets/app.css?v=6849d610" />
+  <link rel="stylesheet" href="assets/app.css?v=4c373492" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=f5c75186"></script>
+  <script defer src="assets/app.js?v=869beed1"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -251,7 +251,7 @@
                   <!-- Balance needed -->
                   <td class="px-3 py-3 text-right text-slate-600 dark:text-slate-300" x-text="fmtSigned(c.pb_star)"></td>
                   <!-- Fiscal gap -->
-                  <td class="px-3 py-3 text-right font-bold text-base"
+                  <td class="px-3 py-3 text-right font-bold text-base cursor-help" :title="gapTitle(c)"
                     :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
                     x-text="fmtSigned(c.fiscal_gap)"></td>
                   <!-- Fiscal gap at the IMF average interest rate -->
@@ -306,7 +306,8 @@
           <span class="px-1 rounded bg-violet-100 text-violet-900 dark:bg-violet-950/60 dark:text-violet-200">fiscal</span> IMF forecasts.
         </p>
         <p>
-          Click a value in the IMF or Market columns to edit it. Hover any header or value for detail.
+          Click a value in the IMF or Market columns to edit it. Hover any header or value for detail, including the
+          fiscal gap for next year.
           <span x-show="hasFlags"><span class="flag-dot"></span> marks a data note, hover for detail.</span>
         </p>
         <p x-show="hasEffective">

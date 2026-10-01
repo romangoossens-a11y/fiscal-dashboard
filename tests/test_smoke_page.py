@@ -333,3 +333,19 @@ def test_gap_at_average_rate(browser, base_url):
     assert "At the average interest rate actually paid" in page.locator("#key-messages").inner_text()
     assert problems == []
     page.close()
+
+
+def test_next_year_gap_hover(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    payload_year = real_payload()["projection_year"] + 1
+    titles = page.locator("#fiscal-table tbody td[title^='Fiscal gap ']:not([title^='Fiscal gap if'])").evaluate_all(
+        "els => els.map(e => e.title)")
+    assert len(titles) == 9
+    assert all(f"Next year ({payload_year})" in t for t in titles)
+    assert not any(bad in " ".join(titles) for bad in BAD_TEXT)
+    # The yield shift flows into next year's gap too
+    moved = page.evaluate("""() => { const d = window._dashboardReady, c = d.allCountries[0];
+        const before = d.nextYearGap(c).gap; d.setYieldShift(50); return d.nextYearGap(c).gap - before; }""")
+    assert moved < 0
+    assert problems == []
+    page.close()

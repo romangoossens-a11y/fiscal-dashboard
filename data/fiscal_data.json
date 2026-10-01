@@ -801,5 +801,70 @@
       "net_interest": 2.23,
       "nominal_growth": 2.228
     }
+  },
+  "next_year": {
+    "ESP": {
+      "real_growth": 1.819,
+      "deflator": 2.926,
+      "pb": 0.144,
+      "debt": 98.173,
+      "year": 2027
+    },
+    "CHE": {
+      "real_growth": 1.344,
+      "deflator": 0.523,
+      "pb": 0.428,
+      "debt": 38.501,
+      "year": 2027
+    },
+    "ITA": {
+      "real_growth": 0.5,
+      "deflator": 2.2,
+      "pb": 1.244,
+      "debt": 138.384,
+      "year": 2027
+    },
+    "JPN": {
+      "real_growth": 0.623,
+      "deflator": 2.693,
+      "pb": -1.699,
+      "debt": 204.351,
+      "year": 2027
+    },
+    "CAN": {
+      "real_growth": 1.896,
+      "deflator": 2.606,
+      "pb": -2.012,
+      "debt": 110.733,
+      "year": 2027
+    },
+    "GBR": {
+      "real_growth": 1.297,
+      "deflator": 2.117,
+      "pb": -0.393,
+      "debt": 103.565,
+      "year": 2027
+    },
+    "DEU": {
+      "real_growth": 1.183,
+      "deflator": 2.498,
+      "pb": -3.152,
+      "debt": 64.609,
+      "year": 2027
+    },
+    "USA": {
+      "real_growth": 2.1,
+      "deflator": 2.196,
+      "pb": -3.517,
+      "debt": 125.781,
+      "year": 2027
+    },
+    "FRA": {
+      "real_growth": 0.876,
+      "deflator": 1.46,
+      "pb": -2.308,
+      "debt": 118.404,
+      "year": 2027
+    }
   }
 }

@@ -230,12 +230,26 @@ def effective_rate(net_interest, nominal_growth, debt_prev):
     return round(net_interest * (1 + nominal_growth / 100) / debt_prev * 100, 3)
 
 
+def next_year_inputs(archive, label, forecast_year):
+    """IMF inputs for the year after the forecast year, so the page can show
+    next year's fiscal gap at the current 10Y yield."""
+    from .config import IMF_FIELDS, field_year
+    year = forecast_year + 1
+    out = {}
+    for iso in COUNTRIES:
+        values = {f: vintages.value(archive, label, iso, f, field_year(f, year)) for f in IMF_FIELDS}
+        if None not in values.values():
+            out[iso] = dict(values, year=year)
+    return out
+
+
 def attach(output, history, archive, run_date: date):
     label = output["imf"]["vintage"]
     output["comparisons"] = comparisons(history, run_date, archive, label)
     output["revisions"] = revisions(archive, label, output["projection_year"])
     output["imf_debt_paths"] = imf_debt_paths(archive, label, output["debt_year"])
     output["imf_bridge"] = imf_bridge(archive, label, output["projection_year"])
+    output["next_year"] = next_year_inputs(archive, label, output["projection_year"])
     for c in output["countries"]:
         b = output["imf_bridge"].get(c["iso3"], {})
         c["r_eff"] = effective_rate(b.get("net_interest"), b.get("nominal_growth"), c.get("debt"))
