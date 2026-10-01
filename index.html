@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>G10 Fiscal Sustainability Dashboard</title>
+  <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
-    content="Interactive G10 fiscal sustainability dashboard with debt trajectory simulations, scenario analysis, and live data from FRED and IMF." />
+    content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
   <link rel="stylesheet" href="assets/app.css" />
   <script>
     // Apply saved theme before paint to avoid flash
@@ -33,23 +33,16 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
       <div class="min-w-0">
         <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
-          <span class="text-cyan-600 dark:text-cyan-400">◆</span> G10 Fiscal Sustainability Dashboard
+          <span class="text-cyan-600 dark:text-cyan-400">◆</span> Fiscal Sustainability Dashboard
         </h1>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          All variables in <strong>nominal terms</strong> &nbsp;·&nbsp;
+          Nine advanced economies &nbsp;·&nbsp; All variables in <strong>nominal terms</strong> &nbsp;·&nbsp;
           <span x-text="projectionYear ? projectionYear + ' projections' : ''"></span>
         </p>
       </div>
       <div class="flex items-center gap-3 sm:gap-4 flex-shrink-0">
         <div class="hidden sm:flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-          <span class="flex items-center gap-1.5">
-            <span class="pulse-dot bg-emerald-500 inline-block"></span>
-            FRED
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-cyan-500 inline-block"></span>
-            IMF
-          </span>
+          <span>Sources: FRED · IMF</span>
           <span class="px-2 py-0.5 rounded-md text-[10px] font-medium"
             :class="isStale ? 'text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60' : 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800'"
             :title="isStale ? 'The weekly refresh has not run for more than 10 days' : 'Date of the last data refresh'">
@@ -94,9 +87,10 @@
       </svg>
       <span>
         <strong>Fiscal Gap = pb − pb*</strong>, where pb* = (r − g) × d<sub>t−1</sub>.
-        A positive gap means the current primary balance exceeds the debt-stabilising level.
-        Click any <span class="text-cyan-600 dark:text-cyan-400">✎ highlighted</span> value in the table to edit for
-        scenario analysis.
+        A positive gap means the primary balance is enough to keep the debt ratio stable.
+        The <strong>breakeven yield</strong> is the 10Y yield at which the debt ratio is stable, so the gap
+        equals the headroom to it times debt. Click any <span class="text-cyan-600 dark:text-cyan-400">✎ highlighted</span>
+        value to edit, or shift all yields at once for scenario analysis.
       </span>
     </div>
 
@@ -116,6 +110,33 @@
           </svg>
           Reset to live data
         </button>
+      </div>
+
+      <!-- Toolbar: comparison period and yield shift -->
+      <div
+        class="px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-slate-500 dark:text-slate-400 font-medium">Change vs</span>
+          <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden" role="group"
+            aria-label="Comparison period">
+            <template x-for="p in periods" :key="p.key">
+              <button type="button" class="px-2.5 py-1 transition-colors" @click="setPeriod(p.key)"
+                :aria-pressed="period === p.key"
+                :class="period === p.key ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+                x-text="p.label"></button>
+            </template>
+          </div>
+          <span class="text-slate-400 dark:text-slate-500" x-text="periodCaption"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="yield-shift" class="text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">All yields</label>
+          <input id="yield-shift" type="range" min="-100" max="100" step="5" class="w-32 cursor-pointer"
+            :value="yieldShift" @input="setYieldShift(+$event.target.value)"
+            :style="'background: ' + (isDark ? '#475569' : '#94a3b8')" />
+          <span class="w-14 text-right font-semibold"
+            :class="yieldShift === 0 ? 'text-slate-500 dark:text-slate-400' : 'text-cyan-700 dark:text-cyan-400'"
+            x-text="(yieldShift > 0 ? '+' : '') + yieldShift + ' bp'"></span>
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -149,15 +170,19 @@
                 class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
                 Fiscal Gap<br><span class="font-normal text-slate-500 dark:text-slate-400">(pp GDP)</span></th>
               <th
+                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
+                Δ Gap<br><span class="font-normal text-slate-500 dark:text-slate-400"
+                  x-text="'(vs ' + (periods.find(p => p.key === period)?.label || '') + ')'"></span></th>
+              <th
                 class="text-right px-3 sm:px-6 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Debt 10Y<br><span class="font-normal text-slate-500 dark:text-slate-400">(% GDP)</span></th>
+                Breakeven r<br><span class="font-normal text-slate-500 dark:text-slate-400">(headroom)</span></th>
             </tr>
           </thead>
           <!-- One tbody per group: sustainable first, then unsustainable -->
           <template x-for="group in groups" :key="group.key">
             <tbody>
               <tr class="section-divider">
-                <td colspan="9">
+                <td colspan="10">
                   <span class="inline-flex items-center gap-1.5"><span
                       class="w-1.5 h-1.5 rounded-full inline-block" :class="group.dot"></span>
                     <span x-text="group.label"></span></span>
@@ -228,10 +253,15 @@
                   <td class="px-3 sm:px-4 py-3 text-right font-bold text-base"
                     :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
                     x-text="fmtSigned(c.fiscal_gap) + '%'"></td>
-                  <td class="px-3 sm:px-6 py-3 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"
-                    :class="debt10Y(c) > c.debt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
-                    <span x-text="fmt(debt10Y(c)) + '%'"></span>
-                    <span class="text-[10px] ml-0.5" x-text="debt10Y(c) > c.debt ? '↑' : '↓'"></span>
+                  <td class="px-3 sm:px-4 py-3 text-right font-medium whitespace-nowrap cursor-help"
+                    :title="changeTitle(c)"
+                    :class="!change(c) ? 'text-slate-400' : change(c).net > 0.05 ? 'text-emerald-600 dark:text-emerald-400' : change(c).net < -0.05 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'"
+                    x-text="change(c) ? fmtSigned(change(c).net) : '—'"></td>
+                  <td class="px-3 sm:px-6 py-3 text-right whitespace-nowrap cursor-help" :title="breakevenTitle(c)">
+                    <div class="text-slate-700 dark:text-slate-200" x-text="breakeven(c).toFixed(1) + '%'"></div>
+                    <div class="text-[11px] font-medium"
+                      :class="headroomBp(c) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                      x-text="(headroomBp(c) > 0 ? '+' : '') + headroomBp(c) + ' bp'"></div>
                   </td>
                 </tr>
               </template>
@@ -255,6 +285,100 @@
         Fiscal Gap = pb − pb* &nbsp;·&nbsp; pb* = (r − g) × d<sub>t−1</sub> &nbsp;·&nbsp;
         <span class="text-cyan-600 dark:text-cyan-400">✎ Click highlighted values</span> (debt, r, g, pb) to edit for
         scenario analysis.
+      </div>
+    </div>
+
+    <!-- ── Drivers Card: what moved the fiscal gap ── -->
+    <div class="glass-card fade-in" style="animation-delay: 0.15s" x-show="periods.length > 0">
+      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <h2 class="text-base font-semibold text-slate-900 dark:text-white">What Moved the Fiscal Gap</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="periodCaption"></p>
+      </div>
+      <div class="p-4 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3 text-xs text-slate-600 dark:text-slate-300">
+          <div class="flex flex-wrap gap-x-4 gap-y-1">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#D85A30"></span>Market rates</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#1D9E75"></span>Real growth</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#EF9F27"></span>Inflation</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#7F77DD"></span>Fiscal stance (pb, debt)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block bg-slate-900 dark:bg-slate-100 ring-2 ring-white dark:ring-slate-900"></span>Net change</span>
+          </div>
+          <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden" role="group"
+            aria-label="Comparison period">
+            <template x-for="p in periods" :key="p.key">
+              <button type="button" class="px-2.5 py-1 transition-colors" @click="setPeriod(p.key)"
+                :aria-pressed="period === p.key"
+                :class="period === p.key ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+                x-text="p.label"></button>
+            </template>
+          </div>
+        </div>
+        <div class="relative" style="height: 440px;">
+          <canvas id="driversChart" role="img"
+            aria-label="Change in each country's fiscal gap split into market rates, real growth, inflation and fiscal stance, with a dot for the net change"></canvas>
+        </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-3">
+          Market rates is the effect of the change in the 10Y yield. Real growth and inflation come from IMF revisions and,
+          over 1Y, the roll to a new year of fundamentals. Higher inflation raises nominal growth, so it flatters the gap
+          without being good news. Contributions sum exactly to the net change. Edits and the yield shift flow through.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── IMF Revisions Card ── -->
+    <div class="glass-card fade-in" style="animation-delay: 0.2s" x-show="revisions">
+      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <h2 class="text-base font-semibold text-slate-900 dark:text-white">How the IMF Changed Its View</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+          x-text="revisions ? 'WEO ' + revisions.previous_label + ' to ' + revisions.current_label + ', same calendar years' : ''"></p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="revisions-table">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-xs text-slate-600 dark:text-slate-400">
+              <th class="text-left px-4 sm:px-6 py-3 font-semibold">Country</th>
+              <th class="text-right px-3 sm:px-4 py-3 font-semibold whitespace-nowrap">
+                Primary balance <span x-text="revisions?.target_year"></span><br>
+                <span class="font-normal">(% GDP, before → now)</span></th>
+              <th class="text-right px-3 sm:px-4 py-3 font-semibold">Revision</th>
+              <th class="text-right px-3 sm:px-4 py-3 font-semibold whitespace-nowrap">
+                Debt change <span x-text="revisions ? revisions.slope_from + ' to ' + revisions.slope_to : ''"></span><br>
+                <span class="font-normal">(pp GDP, before → now)</span></th>
+              <th class="text-right px-3 sm:px-4 py-3 font-semibold">Revision</th>
+              <th class="text-right px-4 sm:px-6 py-3 font-semibold">IMF view</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in revisionRows" :key="row.iso3">
+              <tr class="border-b border-slate-100 dark:border-slate-800/60">
+                <td class="px-4 sm:px-6 py-2.5 font-semibold text-slate-900 dark:text-white" x-text="row.name"></td>
+                <td class="px-3 sm:px-4 py-2.5 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap"
+                  x-text="fmtSigned(row.pb_old) + ' → ' + fmtSigned(row.pb_new)"></td>
+                <td class="px-3 sm:px-4 py-2.5 text-right font-medium"
+                  :class="row.pb_change > 0.2 ? 'text-emerald-600 dark:text-emerald-400' : row.pb_change < -0.2 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'"
+                  x-text="fmtSigned(row.pb_change)"></td>
+                <td class="px-3 sm:px-4 py-2.5 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap"
+                  x-text="fmtSigned(row.debt_slope_old) + ' → ' + fmtSigned(row.debt_slope_new)"></td>
+                <td class="px-3 sm:px-4 py-2.5 text-right font-medium whitespace-nowrap"
+                  :class="row.debt_slope_change < -1 ? 'text-emerald-600 dark:text-emerald-400' : row.debt_slope_change > 1 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'">
+                  <span x-text="fmtSigned(row.debt_slope_change)"></span>
+                  <span class="flag-dot" x-show="Math.abs(row.debt_level_change || 0) >= 5"
+                    :title="'Debt level revised ' + fmtSigned(row.debt_level_change) + ' pp, likely a statistical rebase. The slope comparison excludes it.'"></span>
+                </td>
+                <td class="px-4 sm:px-6 py-2.5 text-right">
+                  <span class="px-2 py-0.5 rounded-md text-xs font-medium" :class="verdictClass(row.verdict)"
+                    x-text="row.verdict.charAt(0).toUpperCase() + row.verdict.slice(1)"></span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <div
+        class="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40">
+        Debt is compared on its projected change, not its level, so rebases do not read as better dynamics.
+        Improving means a higher primary balance or a flatter debt path, deteriorating the opposite, mixed both.
+        Revisions under 0.2 pp (balance) or 1 pp (debt) count as unchanged. Source: IMF WEO and Fiscal Monitor releases.
       </div>
     </div>
 

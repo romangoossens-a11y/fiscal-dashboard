@@ -39,6 +39,9 @@ python -m pytest -q
 - `data/history.json`: one entry per run (`live`) plus monthly `reconstructed` entries from May 2019
 - `data/imf_vintages.json`: every WEO release from April 2019, years t-3 to t+6
 - `scripts/backfill.py`: one-off rebuild of both files from local WEO files (imf.org blocks scripts)
+- `pipeline/dynamics.py` adds `comparisons` (history snapshots nearest to 1M, 6M, 1Y ago, plus the last one before the current IMF release) and `revisions` (current vs previous IMF release, same calendar year: pb level, debt slope from t-1 to t+4, verdict) to `fiscal_data.json`
+- The page splits the change in the gap into rates, real growth, inflation and fiscal stance with `decompose()` in `assets/app.js`, which mirrors `dynamics.decompose()`. Midpoint weights, so the parts sum exactly. Keep the two in step
+- Breakeven yield = g + 100 x pb / debt. Fiscal gap = (breakeven - r) x debt / 100. A +10 bp yield move changes the gap by -debt / 1000
 - See `PLAN.md` for decisions and the roadmap
 
 ## Fiscal Framework (Nominal Terms)

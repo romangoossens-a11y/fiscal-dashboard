@@ -87,3 +87,47 @@ def test_load_failure_shows_banner(browser, base_url):
     banner = page.get_by_text("Data could not be loaded")
     assert banner.is_visible()
     page.close()
+
+
+def test_change_column_and_drivers_chart(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""() => {
+        const d = window._dashboardReady, out = {};
+        for (const p of d.periods.map(p => p.key)) {
+            d.setPeriod(p);
+            out[p] = Math.max(...d.allCountries.map(c => {
+                const ch = d.change(c);
+                return Math.abs(ch.rates + ch.real_growth + ch.inflation + ch.fiscal - ch.net);
+            }));
+        }
+        return { errors: out, bars: Chart.getChart('driversChart').data.labels.length };
+    }""")
+    assert set(result["errors"]) >= {"1M", "6M", "1Y"}
+    assert all(err < 1e-9 for err in result["errors"].values())
+    assert result["bars"] == 9
+    assert problems == []
+    page.close()
+
+
+def test_yield_shift_moves_gap_by_debt_sensitivity(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    moved = page.evaluate("""() => {
+        const d = window._dashboardReady;
+        const before = Object.fromEntries(d.allCountries.map(c => [c.iso3, [c.fiscal_gap, c.debt]]));
+        d.setYieldShift(10);
+        return d.allCountries.map(c => c.fiscal_gap - before[c.iso3][0] + before[c.iso3][1] / 1000);
+    }""")
+    # +10 bp moves each gap by -debt / 1000, up to display rounding
+    assert all(abs(x) < 0.011 for x in moved)
+    assert problems == []
+    page.close()
+
+
+def test_revisions_table(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    rows = page.locator("#revisions-table tbody tr")
+    assert rows.count() == 9
+    verdicts = set(page.locator("#revisions-table tbody tr td:last-child").all_inner_texts())
+    assert verdicts <= {"Improving", "Deteriorating", "Mixed", "Unchanged"}
+    assert problems == []
+    page.close()

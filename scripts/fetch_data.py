@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from pipeline import fred, history, imf, vintages  # noqa: E402
+from pipeline import dynamics, fred, history, imf, vintages  # noqa: E402
 from pipeline.config import OUTPUT_FILE, OUTPUT_JS_FILE, OVERRIDES_FILE  # noqa: E402
 from pipeline.run import build  # noqa: E402
 
@@ -64,6 +64,7 @@ def main():
         overrides=load_json(OVERRIDES_FILE) or {},
     )
 
+    dynamics.attach(output, hist, archive, run_date)
     write_outputs(output)
     vintages.save(archive)
     history.upsert(hist, history.make_entry(run_date, "live", output["imf"]["vintage"],

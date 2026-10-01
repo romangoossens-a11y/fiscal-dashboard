@@ -44,9 +44,9 @@ Tick items off as they land.
 
 ## Phase 3. Features
 
-- [ ] Change column with 1M, 6M, 1Y and since last IMF release toggle
-- [ ] Drivers chart: rates, real growth, inflation, fiscal stance, net dot
-- [ ] IMF revisions table: current year pb, debt slope revision, verdict chip
-- [ ] Breakeven yield, headroom and sensitivity per 10 bp, replacing "Debt 10Y"
-- [ ] Global yield shift control
-- [ ] Wording: FRED pulse dot, "Unsustainable", G10 title
+- [x] Change column with 1M, 6M, 1Y and since last IMF release toggle
+- [x] Drivers chart: rates, real growth, inflation, fiscal stance, net dot
+- [x] IMF revisions table: current year pb, debt slope revision, verdict chip
+- [x] Breakeven yield, headroom and sensitivity per 10 bp, replacing "Debt 10Y"
+- [x] Global yield shift control
+- [x] Wording: FRED pulse dot, "Unsustainable", G10 title

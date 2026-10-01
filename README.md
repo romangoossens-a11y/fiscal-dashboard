@@ -1,4 +1,4 @@
-# G10 Fiscal Sustainability Dashboard
+# Fiscal Sustainability Dashboard
 
 Interactive web dashboard analysing fiscal sustainability for 9 major economies.
 Based on the framework from the Antigravity Macro Research November 2025 report.
@@ -9,9 +9,10 @@ Based on the framework from the Antigravity Macro Research November 2025 report.
 
 ## What It Shows
 
-1. **Fiscal Dashboard Table** — Debt/GDP, 10Y yield (r), nominal growth (g), r−g, primary balance (pb), stabilising balance (pb*), and Fiscal Gap for each country. Colour-coded. Click any r or g value to edit for scenario analysis.
-
-2. **Debt Trajectory Chart** — 10-year debt path simulation for a selected country. Sliders for r and g for what-if scenarios.
+1. **Fiscal Dashboard Table**: debt, 10Y yield (r), nominal growth (g), r − g, primary balance (pb), stabilising balance (pb*), fiscal gap, its change over 1M, 6M, 1Y or since the last IMF release, and the breakeven yield with headroom in bp. Click any highlighted value to edit, or shift all yields at once.
+2. **What Moved the Fiscal Gap**: the change in each country's gap split into market rates, real growth, inflation and fiscal stance, with a dot for the net change.
+3. **How the IMF Changed Its View**: current year primary balance and projected debt change, previous IMF release versus the latest, with a verdict.
+4. **Debt Trajectory Simulation**: 10 year debt path for a selected country, with r and g sliders.
 
 ## Framework
 
@@ -21,6 +22,7 @@ All variables are in **nominal terms**.
 |---|---|
 | `pb* = (r − g) / 100 × d` | Debt-stabilising primary balance |
 | `Fiscal Gap = pb − pb*` | Positive = sustainable, negative = needs consolidation |
+| `Breakeven r = g + 100 × pb / d` | 10Y yield at which the debt ratio is stable. Gap = (breakeven − r) × d / 100 |
 | `d_t = d_{t−1} × (1+r/100) / (1+g/100) − pb` | Debt dynamics (chart) |
 
 ## Data Sources
