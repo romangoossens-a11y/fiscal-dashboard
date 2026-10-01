@@ -7,7 +7,7 @@
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
-  <link rel="stylesheet" href="assets/app.css" />
+  <link rel="stylesheet" href="assets/app.css?v=3686f89f" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -17,11 +17,14 @@
     } catch (e) { /* storage blocked: keep the default dark theme */ }
   </script>
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
-  <script defer src="assets/vendor/chart.umd.js"></script>
+  <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js"></script>
-  <script defer src="assets/vendor/alpine.min.js"></script>
+  <script defer src="assets/app.js?v=9255b527"></script>
+  <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
+
+<!-- All years, release names and months on this page come from the data
+     file through assets/app.js. Do not type them into the markup. -->
 
 <body
   class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-300"
@@ -36,8 +39,8 @@
           <span class="text-cyan-600 dark:text-cyan-400">◆</span> Fiscal Sustainability Dashboard
         </h1>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Nine advanced economies &nbsp;·&nbsp; All variables in <strong>nominal terms</strong> &nbsp;·&nbsp;
-          <span x-text="projectionYear ? projectionYear + ' projections' : ''"></span>
+          Nine advanced economies &nbsp;·&nbsp; All variables in <strong>nominal terms</strong>
+          <span x-show="yearText" x-text="' · ' + imfText + ' forecasts for ' + yearText"></span>
         </p>
       </div>
       <div class="flex items-center gap-3 sm:gap-4 flex-shrink-0">
@@ -46,7 +49,7 @@
           <span class="px-2 py-0.5 rounded-md text-[10px] font-medium"
             :class="isStale ? 'text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60' : 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800'"
             :title="isStale ? 'The weekly refresh has not run for more than 10 days' : 'Date of the last data refresh'">
-            <span x-text="(isStale ? 'Stale, ' : 'Data as of ') + (lastUpdated || '—')"></span>
+            <span x-text="(isStale ? 'Stale, ' : 'Data as of ') + (lastUpdated ? dateLabel(lastUpdated) : '—')"></span>
           </span>
         </div>
         <!-- Theme toggle -->
@@ -73,49 +76,44 @@
     <!-- ── Load failure banner ── -->
     <div x-show="loadError"
       class="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 rounded-xl px-4 py-3 text-sm text-rose-800 dark:text-rose-300">
-      <strong>Data could not be loaded.</strong> The table and chart are unavailable
+      <strong>Data could not be loaded.</strong> The table and charts are unavailable
       (<span x-text="loadError"></span>). Try reloading the page.
     </div>
 
-    <!-- ── Notice bar ── -->
-    <div
-      class="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/40 rounded-xl px-4 py-3 text-sm text-cyan-800 dark:text-cyan-300 flex items-start gap-3 fade-in">
-      <svg width="16" height="16" class="mt-0.5 flex-shrink-0 text-cyan-500" fill="none" stroke="currentColor"
-        viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>
-        <strong>Fiscal Gap = pb − pb*</strong>, where pb* = (r − g) × d<sub>t−1</sub>.
-        A positive gap means the primary balance is enough to keep the debt ratio stable.
-        The <strong>breakeven yield</strong> is the 10Y yield at which the debt ratio is stable, so the gap
-        equals the headroom to it times debt. Click any <span class="text-cyan-600 dark:text-cyan-400">✎ highlighted</span>
-        value to edit, or shift all yields at once for scenario analysis.
-      </span>
+    <!-- ── Key messages, generated from the data ── -->
+    <div x-show="keyMessages.length > 0"
+      class="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/40 rounded-xl px-4 sm:px-5 py-3.5 text-sm text-cyan-900 dark:text-cyan-100 fade-in">
+      <div class="text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-400 mb-1.5">Key messages</div>
+      <ul class="space-y-1 list-disc pl-5" id="key-messages">
+        <template x-for="(m, i) in keyMessages" :key="i">
+          <li x-text="m"></li>
+        </template>
+      </ul>
     </div>
 
     <!-- ── Table Card ── -->
-    <div class="glass-card fade-in" style="animation-delay: 0.1s">
-      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+    <div class="glass-card fade-in" style="animation-delay: 0.1s" x-show="allCountries.length > 0">
+      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-4">
         <div>
-          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Fiscal Dashboard</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="dataVintage || 'Loading…'"></p>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Fiscal Position and Debt Dynamics</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+            x-text="imfText + ' forecasts' + (yearText ? ' for ' + yearText : '') + ', debt at end ' + debtYearText + ' · 10Y yields: ' + monthText + ' average · Sorted by fiscal gap'"></p>
         </div>
         <button @click="resetEdits()"
-          class="text-xs text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors"
+          class="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors whitespace-nowrap"
           x-show="hasEdits">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          Reset to live data
+          Reset to published data
         </button>
       </div>
 
-      <!-- Toolbar: comparison period and yield shift -->
+      <!-- Toolbar: comparison period and yield scenario -->
       <div
         class="px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-xs">
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2" x-show="periods.length > 0">
           <span class="text-slate-500 dark:text-slate-400 font-medium">Change vs</span>
           <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden" role="group"
             aria-label="Comparison period">
@@ -126,63 +124,62 @@
                 x-text="p.label"></button>
             </template>
           </div>
-          <span class="text-slate-400 dark:text-slate-500" x-text="periodCaption"></span>
+          <span class="text-slate-500 dark:text-slate-400" x-text="periodCaption"></span>
         </div>
         <div class="flex items-center gap-2">
-          <label for="yield-shift" class="text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">All yields</label>
-          <input id="yield-shift" type="range" min="-100" max="100" step="5" class="w-32 cursor-pointer"
+          <label for="yield-shift" class="text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">Scenario: shift
+            all 10Y yields</label>
+          <input id="yield-shift" type="range" min="-100" max="100" step="5" class="w-28 cursor-pointer"
             :value="yieldShift" @input="setYieldShift(+$event.target.value)"
             :style="'background: ' + (isDark ? '#475569' : '#94a3b8')" />
-          <span class="w-14 text-right font-semibold"
-            :class="yieldShift === 0 ? 'text-slate-500 dark:text-slate-400' : 'text-cyan-700 dark:text-cyan-400'"
+          <span class="w-16 text-right font-semibold rounded px-1"
+            :class="isScenario ? 'text-amber-800 bg-amber-100 dark:text-amber-300 dark:bg-amber-950/60' : 'text-slate-500 dark:text-slate-400'"
             x-text="(yieldShift > 0 ? '+' : '') + yieldShift + ' bp'"></span>
         </div>
       </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-sm" id="fiscal-table">
-          <thead>
-            <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60">
-              <th
-                class="text-left px-4 sm:px-6 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide sticky-col">
-                Country</th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                Debt Ratio ✎<br><span
-                  class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(d<sub>t−1</sub>)</span></th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                10Y Rate ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80"
-                  x-text="typicalMonth ? '(r, ' + monthLabel(typicalMonth) + ' avg)' : '(r)'">(r)</span></th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                Nom. Growth ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(g)</span></th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide">
-                r − g</th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-cyan-700 dark:text-cyan-400 tracking-wide whitespace-nowrap">
-                Primary Bal ✎<br><span class="font-normal text-cyan-600/70 dark:text-cyan-300/80">(pb)</span></th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Stabilising Bal<br><span class="font-normal text-slate-500 dark:text-slate-400">(pb*)</span></th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Fiscal Gap<br><span class="font-normal text-slate-500 dark:text-slate-400">(pp GDP)</span></th>
-              <th
-                class="text-right px-3 sm:px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Δ Gap<br><span class="font-normal text-slate-500 dark:text-slate-400"
-                  x-text="'(vs ' + (periods.find(p => p.key === period)?.label || '') + ')'"></span></th>
-              <th
-                class="text-right px-3 sm:px-6 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 tracking-wide whitespace-nowrap">
-                Breakeven r<br><span class="font-normal text-slate-500 dark:text-slate-400">(headroom)</span></th>
+          <thead class="text-xs">
+            <!-- Column groups: where each number comes from -->
+            <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">
+              <th class="sticky-col"></th>
+              <th colspan="3" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600"
+                x-text="'IMF forecast' + (imfLabel ? ', ' + imfLabel : '')"></th>
+              <th class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Market</th>
+              <th colspan="3" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Debt arithmetic</th>
+              <th class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Trend</th>
+              <th colspan="2" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Market threshold</th>
+            </tr>
+            <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 align-bottom">
+              <th class="text-left px-4 sm:px-6 py-2.5 font-semibold sticky-col">Country</th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="General government gross debt at the end of the previous year">
+                Debt<span class="block font-normal text-slate-500" x-text="'% GDP, end ' + debtYearText"></span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="General government primary balance: overall balance excluding interest. Positive is a surplus">
+                Primary balance<span class="block font-normal text-slate-500" x-text="'% GDP, ' + (yearText || 'forecast')"></span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="Real GDP growth plus CPI inflation">
+                Nominal growth (g)<span class="block font-normal text-slate-500" x-text="'%, ' + (yearText || 'forecast')"></span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="Monthly average 10Y government bond yield">
+                10Y yield (r)<span class="block font-normal text-slate-500" x-text="'%, ' + monthText + ' avg'"></span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="10Y yield minus nominal growth. Above zero, interest outpaces growth and debt grows on its own">
+                r − g<span class="block font-normal text-slate-500">pp</span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="Primary balance that keeps the debt ratio stable: (r − g) × debt / 100">
+                Balance needed<span class="block font-normal text-slate-500">to stabilise debt, % GDP</span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="Primary balance minus balance needed. Positive means the debt ratio falls">
+                Fiscal gap<span class="block font-normal text-slate-500">pp GDP, + = debt falls</span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="Change in the fiscal gap against the selected comparison date, with the largest driver">
+                Change in gap<span class="block font-normal text-slate-500" x-text="'vs ' + (periodLabel || '—') + ', pp, main driver'"></span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" title="10Y yield at which the debt ratio is stable: g + 100 × primary balance / debt">
+                Breakeven yield<span class="block font-normal text-slate-500">%</span></th>
+              <th class="text-right px-3 sm:px-6 py-2.5 font-semibold" title="Breakeven yield minus actual yield. Positive means yields can rise this much before debt starts rising">
+                Yield cushion<span class="block font-normal text-slate-500">bp, + = room</span></th>
             </tr>
           </thead>
-          <!-- One tbody per group: sustainable first, then unsustainable -->
+          <!-- One tbody per group: debt falling first, then rising -->
           <template x-for="group in groups" :key="group.key">
             <tbody>
               <tr class="section-divider">
-                <td colspan="10">
+                <td colspan="11">
                   <span class="inline-flex items-center gap-1.5"><span
                       class="w-1.5 h-1.5 rounded-full inline-block" :class="group.dot"></span>
                     <span x-text="group.label"></span></span>
@@ -192,77 +189,83 @@
                 <tr
                   class="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
                   :class="selectedCountry?.iso3 === c.iso3 ? 'row-selected' : ''" @click="selectCountryFromTable(c)">
-                  <td class="px-4 sm:px-6 py-3 font-semibold text-slate-900 dark:text-white sticky-col" x-text="c.name">
-                  </td>
-                  <td class="px-3 sm:px-4 py-3 text-right">
+                  <td class="px-4 sm:px-6 py-3 font-semibold text-slate-900 dark:text-white sticky-col" x-text="c.name"></td>
+                  <!-- Debt -->
+                  <td class="px-3 py-3 text-right text-slate-700 dark:text-slate-200">
                     <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt'">
                       <input type="number" step="0.1" class="table-input" x-model.number="editValue"
                         @blur="commitEdit(c, 'debt')" @keydown.enter="commitEdit(c, 'debt')"
                         @keydown.escape="cancelEdit()" @click.stop x-init="$nextTick(() => $el.focus())" />
                     </template>
                     <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'debt')">
-                      <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'debt')"
-                        x-text="fmt(c.debt) + '%'"></span>
+                      <span class="editable-cell" @click.stop="startEdit(c, 'debt')" x-text="fmt(c.debt)"></span>
                     </template>
                     <span class="flag-dot" x-show="flagText(c, 'debt')" :title="flagText(c, 'debt')"></span>
                   </td>
-                  <td class="px-3 sm:px-4 py-3 text-right">
-                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'r'">
-                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                        @blur="commitEdit(c, 'r')" @keydown.enter="commitEdit(c, 'r')" @keydown.escape="cancelEdit()"
-                        @click.stop x-init="$nextTick(() => $el.focus())" />
-                    </template>
-                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'r')">
-                      <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'r')"
-                        x-text="fmt(c.r) + '%'"></span>
-                    </template>
-                    <span class="flag-dot" x-show="flagText(c, 'r')" :title="flagText(c, 'r')"></span>
-                    <div class="text-[10px] text-amber-600 dark:text-amber-400" x-show="c.r_month && c.r_month !== typicalMonth"
-                      x-text="monthLabel(c.r_month)"></div>
-                  </td>
-                  <td class="px-3 sm:px-4 py-3 text-right">
-                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'g'">
-                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
-                        @blur="commitEdit(c, 'g')" @keydown.enter="commitEdit(c, 'g')" @keydown.escape="cancelEdit()"
-                        @click.stop x-init="$nextTick(() => $el.focus())" />
-                    </template>
-                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'g')">
-                      <span class="editable-cell text-cyan-700 dark:text-cyan-400" @click.stop="startEdit(c, 'g')"
-                        x-text="fmt(c.g) + '%'"></span>
-                    </template>
-                    <span class="flag-dot" x-show="flagText(c, 'g')" :title="flagText(c, 'g')"></span>
-                  </td>
-                  <td class="px-3 sm:px-4 py-3 text-right font-medium"
-                    :class="c.r_g < 0 ? 'text-emerald-600 dark:text-emerald-400' : c.r_g > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'"
-                    x-text="fmtSigned(c.r_g) + '%'"></td>
-                  <td class="px-3 sm:px-4 py-3 text-right">
+                  <!-- Primary balance -->
+                  <td class="px-3 py-3 text-right text-slate-700 dark:text-slate-200">
                     <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb'">
                       <input type="number" step="0.1" class="table-input" x-model.number="editValue"
                         @blur="commitEdit(c, 'pb')" @keydown.enter="commitEdit(c, 'pb')" @keydown.escape="cancelEdit()"
                         @click.stop x-init="$nextTick(() => $el.focus())" />
                     </template>
                     <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'pb')">
-                      <span class="editable-cell font-medium"
-                        :class="c.pb > 0 ? 'text-emerald-700 dark:text-emerald-400' : c.pb < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500'"
-                        @click.stop="startEdit(c, 'pb')" x-text="fmtSigned(c.pb) + '%'"></span>
+                      <span class="editable-cell" @click.stop="startEdit(c, 'pb')" x-text="fmtSigned(c.pb)"></span>
                     </template>
                     <span class="flag-dot" x-show="flagText(c, 'pb')" :title="flagText(c, 'pb')"></span>
                   </td>
-                  <td class="px-3 sm:px-4 py-3 text-right text-slate-600 dark:text-slate-300"
-                    x-text="fmtSigned(c.pb_star) + '%'"></td>
-                  <td class="px-3 sm:px-4 py-3 text-right font-bold text-base"
-                    :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
-                    x-text="fmtSigned(c.fiscal_gap) + '%'"></td>
-                  <td class="px-3 sm:px-4 py-3 text-right font-medium whitespace-nowrap cursor-help"
-                    :title="changeTitle(c)"
-                    :class="!change(c) ? 'text-slate-400' : change(c).net > 0.05 ? 'text-emerald-600 dark:text-emerald-400' : change(c).net < -0.05 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'"
-                    x-text="change(c) ? fmtSigned(change(c).net) : '—'"></td>
-                  <td class="px-3 sm:px-6 py-3 text-right whitespace-nowrap cursor-help" :title="breakevenTitle(c)">
-                    <div class="text-slate-700 dark:text-slate-200" x-text="breakeven(c).toFixed(1) + '%'"></div>
-                    <div class="text-[11px] font-medium"
-                      :class="headroomBp(c) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-                      x-text="(headroomBp(c) > 0 ? '+' : '') + headroomBp(c) + ' bp'"></div>
+                  <!-- Nominal growth -->
+                  <td class="px-3 py-3 text-right text-slate-700 dark:text-slate-200">
+                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'g'">
+                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
+                        @blur="commitEdit(c, 'g')" @keydown.enter="commitEdit(c, 'g')" @keydown.escape="cancelEdit()"
+                        @click.stop x-init="$nextTick(() => $el.focus())" />
+                    </template>
+                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'g')">
+                      <span class="editable-cell" @click.stop="startEdit(c, 'g')" x-text="fmt(c.g)"
+                        :title="typeof c.real_growth === 'number' ? 'Real growth ' + fmt(c.real_growth) + ' + inflation ' + fmt(c.inflation) : ''"></span>
+                    </template>
+                    <span class="flag-dot" x-show="flagText(c, 'g')" :title="flagText(c, 'g')"></span>
                   </td>
+                  <!-- 10Y yield -->
+                  <td class="px-3 py-3 text-right text-slate-700 dark:text-slate-200">
+                    <template x-if="editingCell?.iso3 === c.iso3 && editingCell?.field === 'r'">
+                      <input type="number" step="0.1" class="table-input" x-model.number="editValue"
+                        @blur="commitEdit(c, 'r')" @keydown.enter="commitEdit(c, 'r')" @keydown.escape="cancelEdit()"
+                        @click.stop x-init="$nextTick(() => $el.focus())" />
+                    </template>
+                    <template x-if="!(editingCell?.iso3 === c.iso3 && editingCell?.field === 'r')">
+                      <span class="editable-cell" @click.stop="startEdit(c, 'r')" x-text="fmt(c.r)"></span>
+                    </template>
+                    <span class="flag-dot" x-show="flagText(c, 'r')" :title="flagText(c, 'r')"></span>
+                    <div class="text-[10px] text-amber-600 dark:text-amber-400" x-show="c.r_month && c.r_month !== typicalMonth"
+                      x-text="monthLabel(c.r_month) + ' avg'"></div>
+                  </td>
+                  <!-- r − g -->
+                  <td class="px-3 py-3 text-right font-medium"
+                    :class="c.r_g < 0 ? 'text-emerald-600 dark:text-emerald-400' : c.r_g > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'"
+                    x-text="fmtSigned(c.r_g)"></td>
+                  <!-- Balance needed -->
+                  <td class="px-3 py-3 text-right text-slate-600 dark:text-slate-300" x-text="fmtSigned(c.pb_star)"></td>
+                  <!-- Fiscal gap -->
+                  <td class="px-3 py-3 text-right font-bold text-base"
+                    :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
+                    x-text="fmtSigned(c.fiscal_gap)"></td>
+                  <!-- Change in gap with main driver -->
+                  <td class="px-3 py-3 text-right whitespace-nowrap cursor-help" :title="changeTitle(c)">
+                    <span class="font-medium"
+                      :class="!change(c) ? 'text-slate-400' : change(c).net > 0.05 ? 'text-emerald-600 dark:text-emerald-400' : change(c).net < -0.05 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'"
+                      x-text="change(c) ? fmtSigned(change(c).net) : '—'"></span>
+                    <span x-show="mainDriver(c)" class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                      :class="mainDriver(c)?.tagClass" x-text="mainDriver(c)?.tag"></span>
+                  </td>
+                  <!-- Breakeven yield -->
+                  <td class="px-3 py-3 text-right text-slate-700 dark:text-slate-200 cursor-help" :title="breakevenTitle(c)"
+                    x-text="fmt(breakeven(c))"></td>
+                  <!-- Yield cushion -->
+                  <td class="px-3 sm:px-6 py-3 text-right font-medium cursor-help" :title="breakevenTitle(c)"
+                    :class="cushionBp(c) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                    x-text="(cushionBp(c) > 0 ? '+' : '') + cushionBp(c)"></td>
                 </tr>
               </template>
             </tbody>
@@ -280,94 +283,124 @@
         </ul>
       </div>
       <div
-        class="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40">
-        Source: Team calculations, <span x-text="imfLabel ? 'IMF WEO and Fiscal Monitor (' + imfLabel + ')' : 'IMF WEO and Fiscal Monitor'"></span>, FRED monthly average 10Y yields. &nbsp;·&nbsp;
-        Fiscal Gap = pb − pb* &nbsp;·&nbsp; pb* = (r − g) × d<sub>t−1</sub> &nbsp;·&nbsp;
-        <span class="text-cyan-600 dark:text-cyan-400">✎ Click highlighted values</span> (debt, r, g, pb) to edit for
-        scenario analysis.
+        class="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/40 space-y-1">
+        <p>
+          <strong>How to read:</strong> balance needed = (r − g) × debt / 100. Fiscal gap = primary balance minus
+          balance needed: positive means the debt ratio falls. Breakeven yield is the 10Y yield at which the debt
+          ratio is stable, and the yield cushion is how far the actual yield is below it. Main driver tags:
+          <span class="px-1 rounded bg-orange-100 text-orange-900 dark:bg-orange-950/60 dark:text-orange-200">yields</span> market,
+          <span class="px-1 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200">growth</span>,
+          <span class="px-1 rounded bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">inflation</span> and
+          <span class="px-1 rounded bg-violet-100 text-violet-900 dark:bg-violet-950/60 dark:text-violet-200">fiscal</span> IMF forecasts.
+        </p>
+        <p>
+          Click a value in the IMF or Market columns to edit it. Hover any header or value for detail.
+          <span x-show="hasFlags"><span class="flag-dot"></span> marks a data note, hover for detail.</span>
+          Sources: team calculations, <span x-text="imfText"></span>, FRED.
+        </p>
       </div>
     </div>
 
     <!-- ── Drivers Card: what moved the fiscal gap ── -->
-    <div class="glass-card fade-in" style="animation-delay: 0.15s" x-show="periods.length > 0">
-      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-        <h2 class="text-base font-semibold text-slate-900 dark:text-white">What Moved the Fiscal Gap</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="periodCaption"></p>
+    <div class="glass-card fade-in" style="animation-delay: 0.15s" x-show="periods.length > 0 && allCountries.length > 0">
+      <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white">What Moved the Fiscal Gap</h2>
+          <p class="text-sm text-slate-700 dark:text-slate-200 mt-1" x-text="periodMessage"></p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="periodCaption"></p>
+        </div>
+        <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs" role="group"
+          aria-label="Comparison period">
+          <template x-for="p in periods" :key="p.key">
+            <button type="button" class="px-2.5 py-1 transition-colors" @click="setPeriod(p.key)"
+              :aria-pressed="period === p.key"
+              :class="period === p.key ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+              x-text="p.label"></button>
+          </template>
+        </div>
       </div>
       <div class="p-4 sm:p-6">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-3 text-xs text-slate-600 dark:text-slate-300">
-          <div class="flex flex-wrap gap-x-4 gap-y-1">
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#D85A30"></span>Market rates</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#1D9E75"></span>Real growth</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#EF9F27"></span>Inflation</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#7F77DD"></span>Fiscal stance (pb, debt)</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block bg-slate-900 dark:bg-slate-100 ring-2 ring-white dark:ring-slate-900"></span>Net change</span>
-          </div>
-          <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden" role="group"
-            aria-label="Comparison period">
-            <template x-for="p in periods" :key="p.key">
-              <button type="button" class="px-2.5 py-1 transition-colors" @click="setPeriod(p.key)"
-                :aria-pressed="period === p.key"
-                :class="period === p.key ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
-                x-text="p.label"></button>
+        <!-- Legend grouped by source -->
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mb-3 text-xs text-slate-600 dark:text-slate-300">
+          <div class="flex items-center gap-3">
+            <span class="font-semibold text-slate-500 dark:text-slate-400">Market:</span>
+            <template x-for="d in drivers.filter(d => d.source === 'Market')" :key="d.key">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" :style="'background:' + d.color"></span><span x-text="d.label"></span></span>
             </template>
           </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="font-semibold text-slate-500 dark:text-slate-400">IMF forecasts:</span>
+            <template x-for="d in drivers.filter(d => d.source === 'IMF')" :key="d.key">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block" :style="'background:' + d.color"></span><span x-text="d.label"></span></span>
+            </template>
+          </div>
+          <span class="flex items-center gap-1.5"><span
+              class="w-3 h-3 rounded-full inline-block bg-slate-900 dark:bg-slate-100 ring-2 ring-white dark:ring-slate-900"></span>Net
+            change</span>
         </div>
         <div class="relative" style="height: 440px;">
           <canvas id="driversChart" role="img"
-            aria-label="Change in each country's fiscal gap split into market rates, real growth, inflation and fiscal stance, with a dot for the net change"></canvas>
+            aria-label="Change in each country's fiscal gap split into the 10Y yield, real growth, inflation and primary balance and debt, with a dot for the net change"></canvas>
         </div>
-        <p class="text-xs text-slate-400 dark:text-slate-500 mt-3">
-          Market rates is the effect of the change in the 10Y yield. Real growth and inflation come from IMF revisions and,
-          over 1Y, the roll to a new year of fundamentals. Higher inflation raises nominal growth, so it flatters the gap
-          without being good news. Contributions sum exactly to the net change. Edits and the yield shift flow through.
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">
+          Bars to the right improved the gap, bars to the left worsened it. The four contributions add up exactly to
+          the dot. Higher inflation forecasts raise nominal growth and so improve the gap, without being good news.
+          Over 1Y the IMF bars also include the move to a new forecast year. Scenario edits and the yield shift flow through.
         </p>
       </div>
     </div>
 
     <!-- ── IMF Revisions Card ── -->
-    <div class="glass-card fade-in" style="animation-delay: 0.2s" x-show="revisions">
+    <div class="glass-card fade-in" style="animation-delay: 0.2s" x-show="revisions && allCountries.length > 0">
       <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
         <h2 class="text-base font-semibold text-slate-900 dark:text-white">How the IMF Changed Its View</h2>
+        <p class="text-sm text-slate-700 dark:text-slate-200 mt-1" x-text="imfMessage"></p>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
-          x-text="revisions ? 'WEO ' + revisions.previous_label + ' to ' + revisions.current_label + ', same calendar years' : ''"></p>
+          x-text="revisions ? 'Forecasts for the same calendar years in the ' + revisions.previous_label + ' and ' + revisions.current_label + ' WEO releases' : ''"></p>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm" id="revisions-table">
-          <thead>
-            <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-xs text-slate-600 dark:text-slate-400">
-              <th class="text-left px-4 sm:px-6 py-3 font-semibold">Country</th>
-              <th class="text-right px-3 sm:px-4 py-3 font-semibold whitespace-nowrap">
-                Primary balance <span x-text="revisions?.target_year"></span><br>
-                <span class="font-normal">(% GDP, before → now)</span></th>
-              <th class="text-right px-3 sm:px-4 py-3 font-semibold">Revision</th>
-              <th class="text-right px-3 sm:px-4 py-3 font-semibold whitespace-nowrap">
-                Debt change <span x-text="revisions ? revisions.slope_from + ' to ' + revisions.slope_to : ''"></span><br>
-                <span class="font-normal">(pp GDP, before → now)</span></th>
-              <th class="text-right px-3 sm:px-4 py-3 font-semibold">Revision</th>
-              <th class="text-right px-4 sm:px-6 py-3 font-semibold">IMF view</th>
+          <thead class="text-xs">
+            <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">
+              <th></th>
+              <th colspan="3" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600"
+                x-text="'Primary balance ' + (revisions?.target_year || '') + ', % GDP'"></th>
+              <th colspan="3" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600"
+                x-text="'Projected rise in debt, ' + (revisions ? revisions.slope_from + ' to ' + revisions.slope_to : '') + ', pp GDP'"></th>
+              <th></th>
+            </tr>
+            <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 align-bottom">
+              <th class="text-left px-4 sm:px-6 py-2.5 font-semibold">Country</th>
+              <th class="text-right px-3 py-2.5 font-semibold" x-text="revisions?.previous_label || 'Previous'"></th>
+              <th class="text-right px-3 py-2.5 font-semibold" x-text="revisions?.current_label || 'Latest'"></th>
+              <th class="text-right px-3 py-2.5 font-semibold">Change<span class="block font-normal text-slate-500">+ = better</span></th>
+              <th class="text-right px-3 py-2.5 font-semibold" x-text="revisions?.previous_label || 'Previous'"></th>
+              <th class="text-right px-3 py-2.5 font-semibold" x-text="revisions?.current_label || 'Latest'"></th>
+              <th class="text-right px-3 py-2.5 font-semibold">Change<span class="block font-normal text-slate-500">− = better</span></th>
+              <th class="text-right px-4 sm:px-6 py-2.5 font-semibold">IMF outlook</th>
             </tr>
           </thead>
           <tbody>
             <template x-for="row in revisionRows" :key="row.iso3">
               <tr class="border-b border-slate-100 dark:border-slate-800/60">
                 <td class="px-4 sm:px-6 py-2.5 font-semibold text-slate-900 dark:text-white" x-text="row.name"></td>
-                <td class="px-3 sm:px-4 py-2.5 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap"
-                  x-text="fmtSigned(row.pb_old) + ' → ' + fmtSigned(row.pb_new)"></td>
-                <td class="px-3 sm:px-4 py-2.5 text-right font-medium"
+                <td class="px-3 py-2.5 text-right text-slate-500 dark:text-slate-400" x-text="fmtSigned(row.pb_old)"></td>
+                <td class="px-3 py-2.5 text-right text-slate-700 dark:text-slate-200" x-text="fmtSigned(row.pb_new)"></td>
+                <td class="px-3 py-2.5 text-right font-medium"
                   :class="row.pb_change > 0.2 ? 'text-emerald-600 dark:text-emerald-400' : row.pb_change < -0.2 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'"
                   x-text="fmtSigned(row.pb_change)"></td>
-                <td class="px-3 sm:px-4 py-2.5 text-right text-slate-600 dark:text-slate-300 whitespace-nowrap"
-                  x-text="fmtSigned(row.debt_slope_old) + ' → ' + fmtSigned(row.debt_slope_new)"></td>
-                <td class="px-3 sm:px-4 py-2.5 text-right font-medium whitespace-nowrap"
+                <td class="px-3 py-2.5 text-right text-slate-500 dark:text-slate-400" x-text="fmtSigned(row.debt_slope_old)"></td>
+                <td class="px-3 py-2.5 text-right text-slate-700 dark:text-slate-200" x-text="fmtSigned(row.debt_slope_new)"></td>
+                <td class="px-3 py-2.5 text-right font-medium whitespace-nowrap"
                   :class="row.debt_slope_change < -1 ? 'text-emerald-600 dark:text-emerald-400' : row.debt_slope_change > 1 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'">
                   <span x-text="fmtSigned(row.debt_slope_change)"></span>
                   <span class="flag-dot" x-show="Math.abs(row.debt_level_change || 0) >= 5"
-                    :title="'Debt level revised ' + fmtSigned(row.debt_level_change) + ' pp, likely a statistical rebase. The slope comparison excludes it.'"></span>
+                    :title="'Debt level revised ' + fmtSigned(row.debt_level_change) + ' pp, likely a statistical rebase. Comparing the projected rise excludes it.'"></span>
                 </td>
                 <td class="px-4 sm:px-6 py-2.5 text-right">
-                  <span class="px-2 py-0.5 rounded-md text-xs font-medium" :class="verdictClass(row.verdict)"
-                    x-text="row.verdict.charAt(0).toUpperCase() + row.verdict.slice(1)"></span>
+                  <span class="px-2 py-0.5 rounded-md text-xs font-medium cursor-help" :class="verdictClass(row.verdict)"
+                    :title="verdictReason(row)"
+                    x-text="row.verdict ? row.verdict.charAt(0).toUpperCase() + row.verdict.slice(1) : '—'"></span>
                 </td>
               </tr>
             </template>
@@ -375,19 +408,19 @@
         </table>
       </div>
       <div
-        class="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40">
-        Debt is compared on its projected change, not its level, so rebases do not read as better dynamics.
-        Improving means a higher primary balance or a flatter debt path, deteriorating the opposite, mixed both.
-        Revisions under 0.2 pp (balance) or 1 pp (debt) count as unchanged. Source: IMF WEO and Fiscal Monitor releases.
+        class="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/40">
+        Debt is compared on its projected rise rather than its level, so statistical rebases do not read as a better
+        outlook. Improving: stronger primary balance or flatter debt path. Deteriorating: the opposite. Mixed: one of each.
+        Changes under 0.2 pp (balance) or 1 pp (debt) count as unchanged. Hover a verdict for the reason.
       </div>
     </div>
 
-    <!-- ── Chart Card ── -->
-    <div class="glass-card fade-in" style="animation-delay: 0.2s">
+    <!-- ── Debt Trajectory Card ── -->
+    <div class="glass-card fade-in" style="animation-delay: 0.25s" x-show="allCountries.length > 0">
       <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
         <h2 class="text-base font-semibold text-slate-900 dark:text-white">Debt Trajectory Simulation</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Nominal terms · Assumes constant primary balance ·
-          10-year horizon</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
+          x-text="'Debt from end ' + trajectoryStartYear + ' to end ' + trajectoryEndYear + ', holding the primary balance, r and g constant, against the ' + imfText + ' forecast'"></p>
       </div>
 
       <div class="p-4 sm:p-6">
@@ -395,7 +428,6 @@
 
           <!-- Controls -->
           <div class="space-y-5">
-            <!-- Country selector -->
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Country</label>
               <select
@@ -407,10 +439,9 @@
               </select>
             </div>
 
-            <!-- r slider -->
             <div>
               <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Nominal Rate (r)</label>
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">10Y yield (r)</label>
                 <span
                   class="text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"
                   x-text="sliderR.toFixed(2) + '%'"></span>
@@ -423,10 +454,9 @@
               </div>
             </div>
 
-            <!-- g slider -->
             <div>
               <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Nominal Growth (g)</label>
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Nominal growth (g)</label>
                 <span
                   class="text-sm font-bold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"
                   x-text="sliderG.toFixed(2) + '%'"></span>
@@ -439,47 +469,51 @@
               </div>
             </div>
 
-            <!-- Live metrics panel -->
             <div class="metrics-panel rounded-xl p-4 space-y-2.5 text-sm">
               <div class="flex justify-between">
                 <span class="text-slate-500 dark:text-slate-400">r − g</span>
                 <span class="font-bold"
                   :class="(sliderR - sliderG) < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-                  x-text="fmtSigned(+(sliderR - sliderG).toFixed(2)) + '%'"></span>
+                  x-text="fmtSigned(sliderR - sliderG) + ' pp'"></span>
               </div>
               <div class="flex justify-between">
-                <span class="text-slate-500 dark:text-slate-400">Starting debt</span>
+                <span class="text-slate-500 dark:text-slate-400" x-text="'Debt, end ' + trajectoryStartYear"></span>
                 <span class="font-semibold text-slate-800 dark:text-slate-200"
                   x-text="selectedCountry ? fmt(selectedCountry.debt) + '% GDP' : '—'"></span>
               </div>
               <div class="flex justify-between">
-                <span class="text-slate-500 dark:text-slate-400">Primary balance</span>
+                <span class="text-slate-500 dark:text-slate-400">Primary balance, held constant</span>
                 <span class="font-medium text-slate-600 dark:text-slate-300"
                   x-text="selectedCountry ? fmtSigned(selectedCountry.pb) + '% GDP' : '—'"></span>
               </div>
               <div class="border-t border-slate-200 dark:border-slate-700 pt-2.5 flex justify-between">
-                <span class="text-slate-500 dark:text-slate-400 font-medium">10Y debt (est.)</span>
+                <span class="text-slate-500 dark:text-slate-400 font-medium" x-text="'Debt, end ' + trajectoryEndYear"></span>
                 <span class="font-bold text-lg"
                   :class="chartFinalDebt > (selectedCountry?.debt || 0) ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'"
                   x-text="chartFinalDebt ? fmt(chartFinalDebt) + '%' : '—'"></span>
               </div>
             </div>
 
-            <!-- Reset sliders -->
             <button @click="resetSliders()"
-              class="w-full text-xs text-slate-400 dark:text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 py-1.5 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">Reset
-              to baseline values</button>
+              class="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 py-1.5 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">Reset
+              sliders to table values</button>
           </div>
 
           <!-- Chart -->
           <div class="lg:col-span-2">
-            <div class="relative" style="height: 360px;">
-              <canvas id="debtChart" x-ref="debtChart"></canvas>
+            <div class="flex flex-wrap gap-x-5 gap-y-1 mb-2 text-xs text-slate-600 dark:text-slate-300">
+              <span class="flex items-center gap-1.5"><span class="w-5 h-0.5 inline-block bg-rose-500"></span>Simple
+                projection (red if debt rises, green if it falls)</span>
+              <span class="flex items-center gap-1.5" x-show="hasImfPath"><span
+                  class="w-5 inline-block border-t-2 border-dashed border-slate-500"></span><span
+                  x-text="imfText + ' forecast'"></span></span>
             </div>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-3 text-center">
-              Source: Team calculations.
-              Starting Debt: <span x-text="selectedCountry ? fmt(selectedCountry.debt) + '%' : '—'"></span>.
-              Primary Balance: <span x-text="selectedCountry ? fmtSigned(selectedCountry.pb) + '% GDP' : '—'"></span>.
+            <div class="relative" style="height: 360px;">
+              <canvas id="debtChart" role="img" aria-label="Projected debt ratio of the selected country"></canvas>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">
+              The simple projection applies today's 10Y yield to the whole debt stock, so it moves faster than reality
+              for countries whose debt carries older, lower coupons. The IMF line uses its full set of assumptions.
             </p>
           </div>
         </div>
@@ -487,11 +521,11 @@
     </div>
 
     <!-- ── Footer ── -->
-    <footer class="text-xs text-slate-400 dark:text-slate-500 text-center pb-6 pt-2">
+    <footer class="text-xs text-slate-500 dark:text-slate-400 text-center pb-6 pt-2">
       <div class="border-t border-slate-200 dark:border-slate-800 pt-4">
         Data: FRED (St. Louis Fed) · <span x-text="imfLabel ? 'IMF World Economic Outlook and Fiscal Monitor (' + imfLabel + ')' : 'IMF World Economic Outlook and Fiscal Monitor'"></span> &nbsp;·&nbsp;
-        Framework: <span class="text-slate-500 dark:text-slate-400">Antigravity Macro Research</span> &nbsp;·&nbsp;
-        <span x-text="'Updated: ' + (lastUpdated || '—')"></span>
+        Framework: Antigravity Macro Research &nbsp;·&nbsp;
+        <span x-text="'Updated: ' + (lastUpdated ? dateLabel(lastUpdated) : '—')"></span>
       </div>
     </footer>
 

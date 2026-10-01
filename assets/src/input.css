@@ -73,25 +73,37 @@ body {
 }
 
 /* Editable cell highlight */
+/* Editable inputs: neutral text, a faint dotted underline, and a pencil that
+   appears on hover. Colour is kept for meaning, not for editability. */
 .editable-cell {
   cursor: pointer;
   position: relative;
-  border-bottom: 1.5px dashed currentColor;
-  opacity: 0.85;
-  transition: all 0.2s ease;
+  border-bottom: 1px dotted rgba(148, 163, 184, 0.6);
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.editable-cell:hover {
-  opacity: 1;
-  border-bottom-color: #22d3ee;
+.editable-cell::after {
+  content: '✎';
+  position: absolute;
+  right: -14px;
+  top: 0;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
-.dark .editable-cell:hover {
-  color: #22d3ee !important;
+.editable-cell:hover::after {
+  opacity: 0.8;
 }
 
 .editable-cell:hover {
   color: #0891b2 !important;
+  border-bottom-color: #0891b2;
+}
+
+.dark .editable-cell:hover {
+  color: #22d3ee !important;
+  border-bottom-color: #22d3ee;
 }
 
 /* Table input */

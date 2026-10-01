@@ -3,7 +3,7 @@
   "private": true,
   "description": "Front end build: precompiled Tailwind CSS and self-hosted vendor files. The site itself has no build step on GitHub Pages, so the outputs in assets/ are committed.",
   "scripts": {
-    "build": "node scripts/build-assets.mjs && tailwindcss -c tailwind.config.js -i assets/src/input.css -o assets/app.css --minify"
+    "build": "node scripts/build-assets.mjs && tailwindcss -c tailwind.config.js -i assets/src/input.css -o assets/app.css --minify && node scripts/stamp-assets.mjs"
   },
   "devDependencies": {
     "@fontsource/inter": "5.3.0",

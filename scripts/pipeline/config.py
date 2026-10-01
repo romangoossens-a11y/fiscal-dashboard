@@ -10,7 +10,7 @@ HISTORY_FILE = DATA_DIR / "history.json"
 VINTAGES_FILE = DATA_DIR / "imf_vintages.json"
 OVERRIDES_FILE = DATA_DIR / "overrides.json"
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 COUNTRY_NAMES = {
     "ESP": "Spain",
@@ -52,6 +52,15 @@ SDMX_INDICATORS = {
     "debt": "GGXWDG_NGDP",        # general government gross debt, % GDP
 }
 DATAMAPPER_INDICATORS = dict(SDMX_INDICATORS, pb="GGXONLB_G01_GDP_PT")
+
+# Year of each IMF field relative to the forecast year t. Debt dynamics run
+# from the end of last year: d_t = d_(t-1) x (1 + r) / (1 + g) - pb_t, so the
+# stabilising balance uses debt at the end of t-1.
+IMF_YEAR_OFFSET = {"real_growth": 0, "inflation": 0, "pb": 0, "debt": -1}
+
+
+def field_year(field, forecast_year):
+    return forecast_year + IMF_YEAR_OFFSET[field]
 
 SDMX_BASE = "https://api.imf.org/external/sdmx/3.0"
 SDMX_AGENCY = "IMF.RES"

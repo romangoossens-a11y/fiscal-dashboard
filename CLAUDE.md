@@ -42,6 +42,9 @@ python -m pytest -q
 - `pipeline/dynamics.py` adds `comparisons` (history snapshots nearest to 1M, 6M, 1Y ago, plus the last one before the current IMF release) and `revisions` (current vs previous IMF release, same calendar year: pb level, debt slope from t-1 to t+4, verdict) to `fiscal_data.json`
 - The page splits the change in the gap into rates, real growth, inflation and fiscal stance with `decompose()` in `assets/app.js`, which mirrors `dynamics.decompose()`. Midpoint weights, so the parts sum exactly. Keep the two in step
 - Breakeven yield = g + 100 x pb / debt. Fiscal gap = (breakeven - r) x debt / 100. A +10 bp yield move changes the gap by -debt / 1000
+- **Debt is end of previous year** (`debt_year` = forecast year minus 1), as in d_t = d_(t-1) x (1 + r) / (1 + g) - pb_t. History uses the same definition. `config.field_year()` maps each IMF field to its year
+- **No dates or release names in the markup.** Every year, month and IMF release on the page is built in `assets/app.js` from the data, with a neutral fallback when a field is missing. The key messages are generated sentences that drop out when their inputs are missing. Browser tests check the page with blocks removed, with an old schema, and with shifted years
+- `npm run build` stamps asset links in `index.html` with a content hash (`?v=`), so a deploy cannot mix a new page with cached old scripts
 - See `PLAN.md` for decisions and the roadmap
 
 ## Fiscal Framework (Nominal Terms)

@@ -152,8 +152,21 @@ def revisions(archive, label, target_year):
     }
 
 
+def imf_debt_paths(archive, label, from_year):
+    """The IMF's own debt projection per country, for the trajectory chart."""
+    out = {}
+    for iso in COUNTRIES:
+        years = (archive["vintages"].get(label or "", {}).get("data", {})
+                 .get(iso, {}).get("debt", {}))
+        path = {y: v for y, v in sorted(years.items()) if int(y) >= from_year}
+        if path:
+            out[iso] = path
+    return out
+
+
 def attach(output, history, archive, run_date: date):
     label = output["imf"]["vintage"]
     output["comparisons"] = comparisons(history, run_date, archive, label)
     output["revisions"] = revisions(archive, label, output["projection_year"])
+    output["imf_debt_paths"] = imf_debt_paths(archive, label, output["debt_year"])
     return output

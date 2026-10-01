@@ -51,4 +51,4 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build
-      - run: git diff --exit-code -- assets/ || (echo "Run 'npm run build' and commit assets/" && exit 1)
+      - run: git diff --exit-code -- assets/ index.html || (echo "Run npm run build and commit assets/ and index.html" && exit 1)

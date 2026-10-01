@@ -8,7 +8,7 @@ from pipeline.validate import CARRIED_FORWARD, LAGGING
 
 RUN = date(2026, 9, 30)
 IMF = {iso: {"real_growth": {"2026": 1.5}, "inflation": {"2026": 2.5},
-             "pb": {"2026": -1.0}, "debt": {"2026": 100.0}} for iso in COUNTRIES}
+             "pb": {"2026": -1.0}, "debt": {"2025": 100.0, "2026": 103.0}} for iso in COUNTRIES}
 SERIES_TO_ISO = {s: iso for iso, s in YIELD_SERIES.items()}
 
 
@@ -42,6 +42,7 @@ def test_happy_path():
     c = by_iso(out)["USA"]
     assert c["r"] == 4.0 and c["r_month"] == "2026-08" and c["flags"] == []
     assert c["fiscal_gap"] == -1.0  # pb -1 - (4 - 4) x 100 / 100
+    assert c["debt"] == 100.0 and out["debt_year"] == 2025  # end of last year
 
 
 def test_failed_yield_is_carried_forward_and_flagged():
@@ -107,7 +108,7 @@ def test_missing_imf_field_comes_from_archive():
 
 
 def test_new_release_is_archived():
-    changed = {iso: dict(fields, debt={"2026": 101.0}) for iso, fields in IMF.items()}
+    changed = {iso: dict(fields, debt={"2025": 101.0, "2026": 104.0}) for iso, fields in IMF.items()}
     arch = archive()
     out = build(date(2026, 10, 15), good_yield, lambda: changed, fail, None, arch)
     assert out["imf"]["vintage"] == "Oct2026" and out["imf"]["release_status"] == "new"

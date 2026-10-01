@@ -9,7 +9,8 @@ from collections import Counter
 from datetime import date
 
 from . import compute, validate, vintages
-from .config import COUNTRY_NAMES, IMF_FIELDS, SCHEMA_VERSION, VALID_RANGES, YIELD_SERIES
+from .config import (COUNTRY_NAMES, IMF_FIELDS, SCHEMA_VERSION, VALID_RANGES, YIELD_SERIES,
+                     field_year)
 from .validate import CARRIED_FORWARD, flag, month_label
 
 
@@ -93,27 +94,29 @@ def imf_values(iso, data, label, target, archive, prev, published_on):
     """The four IMF fields for one country, with carry forward and flags."""
     values, flags = {}, []
     for field in IMF_FIELDS:
-        v = data.get(iso, {}).get(field, {}).get(str(target))
+        year = field_year(field, target)
+        v = data.get(iso, {}).get(field, {}).get(str(year))
         if validate.in_range(field, v):
             values[field] = v
             continue
-        archived = vintages.value(archive, label, iso, field, target)
+        archived = vintages.value(archive, label, iso, field, year)
         if validate.in_range(field, archived):
             values[field] = archived
             if data:
                 flags.append(flag(field, CARRIED_FORWARD,
-                                  f"{target} value missing from the live IMF source, "
+                                  f"{year} value missing from the live IMF source, "
                                   f"taken from the archived WEO {vintages.human(label)} release"))
         elif prev.get(field) is not None:
             values[field] = prev[field]
-            flags.append(_carry_flag(field, f"no {target} IMF value", prev, published_on))
+            flags.append(_carry_flag(field, f"no {year} IMF value", prev, published_on))
         else:
             values[field] = None
     prior = vintages.previous(archive, label) if label in archive["vintages"] else None
     if prior:
         for field in IMF_FIELDS:
             f = validate.revision_flag(field, values[field],
-                                       vintages.value(archive, prior, iso, field, target),
+                                       vintages.value(archive, prior, iso, field,
+                                                      field_year(field, target)),
                                        vintages.human(prior))
             if f:
                 flags.append(f)
@@ -181,6 +184,7 @@ def build(run_date: date, fetch_yield, fetch_sdmx, fetch_datamapper,
         "last_updated": run_date.isoformat(),
         "data_vintage": f"{release} | {yields_text}",
         "projection_year": target,
+        "debt_year": field_year("debt", target),
         "imf": {
             "vintage": label,
             "vintage_label": vintages.human(label) if label else None,

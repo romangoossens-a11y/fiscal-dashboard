@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pipeline import compute, fred, history, imf, vintages  # noqa: E402
 from pipeline.config import (COUNTRIES, SDMX_INDICATORS, WEO_RELEASE_DATES,  # noqa: E402
-                             YIELD_SERIES)
+                             YIELD_SERIES, field_year)
 from pipeline.validate import add_months  # noqa: E402
 
 CODE_TO_FIELD = {code: field for field, code in SDMX_INDICATORS.items()}
@@ -134,10 +134,11 @@ def reconstruct(archive, hist, start_month, end_date):
             for f in SDMX_INDICATORS:
                 # The April 2020 release carried no fiscal series, so a missing
                 # field falls back to the most recent earlier release.
+                year = field_year(f, d.year)
                 src = label
-                while src and vintages.value(archive, src, iso, f, d.year) is None:
+                while src and vintages.value(archive, src, iso, f, year) is None:
                     src = vintages.previous(archive, src)
-                vals[f] = vintages.value(archive, src, iso, f, d.year)
+                vals[f] = vintages.value(archive, src, iso, f, year)
                 if src and src != label:
                     borrowed.add((f, src))
             r = yields[iso].get(month)
@@ -161,16 +162,25 @@ def reconstruct(archive, hist, start_month, end_date):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    ap.add_argument("--weo-dir", required=True, type=Path)
+    ap.add_argument("--weo-dir", type=Path, help="needed unless --history-only")
     ap.add_argument("--start", default="2019-05", help="first month end, YYYY-MM")
+    ap.add_argument("--history-only", action="store_true",
+                    help="keep the existing IMF archive, rebuild only the history")
+    ap.add_argument("--fresh-history", action="store_true",
+                    help="discard existing history entries, live ones included")
     args = ap.parse_args()
 
-    print("Building IMF release archive")
-    archive = build_archive(args.weo_dir)
-    vintages.save(archive)
+    if args.history_only:
+        archive = vintages.load()
+    else:
+        if not args.weo_dir:
+            ap.error("--weo-dir is required unless --history-only")
+        print("Building IMF release archive")
+        archive = build_archive(args.weo_dir)
+        vintages.save(archive)
 
     print("Reconstructing monthly history")
-    hist = history.load()
+    hist = {"entries": []} if args.fresh_history else history.load()
     last_month_end = date.today().replace(day=1) - timedelta(days=1)
     n = reconstruct(archive, hist, args.start, last_month_end)
     history.save(hist)

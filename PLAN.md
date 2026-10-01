@@ -50,3 +50,18 @@ Tick items off as they land.
 - [x] Breakeven yield, headroom and sensitivity per 10 bp, replacing "Debt 10Y"
 - [x] Global yield shift control
 - [x] Wording: FRED pulse dot, "Unsustainable", G10 title
+
+## Phase 3b. Readability pass
+
+- [x] Column groups by source (IMF forecast, Market, Debt arithmetic, Trend, Market threshold)
+- [x] Plain labels, units and years in headers, values without units
+- [x] Debt at end of the previous year
+- [x] Neutral editable cells, pencil on hover
+- [x] Main driver tag on the change column
+- [x] Comparison caption in market terms, scenario label
+- [x] Drivers labelled by source, generated takeaway
+- [x] IMF table with separate columns and verdict reasons
+- [x] IMF debt path on the trajectory chart
+- [x] Generated key messages
+- [x] All labels from the data, tested against missing and shifted data
+- [x] Content hashed asset links

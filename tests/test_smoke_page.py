@@ -113,12 +113,13 @@ def test_yield_shift_moves_gap_by_debt_sensitivity(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
     moved = page.evaluate("""() => {
         const d = window._dashboardReady;
+        d.setYieldShift(0);  // baseline recomputed from the displayed inputs
         const before = Object.fromEntries(d.allCountries.map(c => [c.iso3, [c.fiscal_gap, c.debt]]));
         d.setYieldShift(10);
         return d.allCountries.map(c => c.fiscal_gap - before[c.iso3][0] + before[c.iso3][1] / 1000);
     }""")
-    # +10 bp moves each gap by -debt / 1000, up to display rounding
-    assert all(abs(x) < 0.011 for x in moved)
+    # +10 bp moves each gap by -debt / 1000, up to 2 dp rounding
+    assert all(abs(x) < 0.011 for x in moved), moved
     assert problems == []
     page.close()
 
@@ -129,5 +130,74 @@ def test_revisions_table(browser, base_url):
     assert rows.count() == 9
     verdicts = set(page.locator("#revisions-table tbody tr td:last-child").all_inner_texts())
     assert verdicts <= {"Improving", "Deteriorating", "Mixed", "Unchanged"}
+    assert problems == []
+    page.close()
+
+
+# ── Degraded data: the page must stay readable whatever is missing ─────────
+
+BAD_TEXT = ("undefined", "NaN", "null", "[object")
+
+
+def serve_payload(payload):
+    import json
+
+    def route(page):
+        body = "window.FISCAL_DATA = " + json.dumps(payload) + ";"
+        page.route("**/data/fiscal_data.js*", lambda r: r.fulfill(
+            status=200, body=body, content_type="application/javascript"))
+    return route
+
+
+def real_payload():
+    import json
+    return json.loads((ROOT / "data" / "fiscal_data.json").read_text(encoding="utf-8"))
+
+
+def visible_text(page):
+    return page.locator("body").inner_text()
+
+
+@pytest.mark.parametrize("strip", [
+    ("comparisons", "revisions", "imf", "yields", "debt_year", "imf_debt_paths", "projection_year"),
+    ("comparisons",),
+    ("revisions",),
+    ("imf",),
+])
+def test_page_survives_missing_blocks(browser, base_url, strip):
+    payload = {k: v for k, v in real_payload().items() if k not in strip}
+    page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
+    assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == 9
+    text = visible_text(page)
+    assert not any(bad in text for bad in BAD_TEXT), [b for b in BAD_TEXT if b in text]
+    assert page.locator("#key-messages li").count() >= 1
+    assert problems == []
+    page.close()
+
+
+def test_page_survives_old_schema_countries(browser, base_url):
+    # Version 1 files had no real growth, inflation or yield month.
+    payload = real_payload()
+    for c in payload["countries"]:
+        for k in ("real_growth", "inflation", "r_month", "flags"):
+            c.pop(k, None)
+    page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
+    assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == 9
+    text = visible_text(page)
+    assert not any(bad in text for bad in BAD_TEXT)
+    assert problems == []
+    page.close()
+
+
+def test_labels_follow_the_data(browser, base_url):
+    # Every year, month and release name on the page comes from the data.
+    payload = real_payload()
+    payload.update(projection_year=2031, debt_year=2030)
+    payload["imf"]["vintage_label"] = "October 2030"
+    payload["yields"]["typical_month"] = "2031-02"
+    page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
+    text = visible_text(page)
+    for expected in ("October 2030", "end 2030", "Feb 2031"):
+        assert expected in text
     assert problems == []
     page.close()

@@ -6,6 +6,8 @@ Each entry stores the inputs and the resulting fiscal gap per country:
      "countries": {iso: {"r", "r_month", "real_growth", "inflation",
                          "pb", "debt", "fiscal_gap"}}}
 
+Debt is at the end of the year before target_year, like the live table.
+
 "live" entries are written by the weekly run. "reconstructed" entries were
 rebuilt by scripts/backfill.py from FRED and archived IMF releases, one per
 month end, using the previous month's average yield.
@@ -38,6 +40,7 @@ def make_entry(run_date, kind, imf_vintage, target_year, countries):
         "kind": kind,
         "imf_vintage": imf_vintage,
         "target_year": target_year,
+        "debt_year": target_year - 1,
         "countries": {c["iso3"]: {k: c.get(k) for k in KEYS} for c in countries},
     }
 
