@@ -7,7 +7,7 @@
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
-  <link rel="stylesheet" href="assets/app.css?v=3ca60bec" />
+  <link rel="stylesheet" href="assets/app.css?v=6849d610" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=f9e6b4da"></script>
+  <script defer src="assets/app.js?v=f5c75186"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -147,7 +147,7 @@
               <th colspan="3" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600"
                 x-text="'IMF forecast' + (imfLabel ? ', ' + imfLabel : '')"></th>
               <th class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Market</th>
-              <th colspan="3" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Debt arithmetic</th>
+              <th colspan="4" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Debt arithmetic</th>
               <th class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Trend</th>
               <th colspan="2" class="px-3 pt-3 pb-1.5 font-semibold text-center border-b-2 border-slate-300 dark:border-slate-600">Market threshold</th>
             </tr>
@@ -167,6 +167,9 @@
                 Balance needed<span class="block font-normal text-slate-500">to stabilise debt, % GDP</span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="Primary balance minus balance needed. Positive means the debt ratio falls">
                 Fiscal gap<span class="block font-normal text-slate-500">pp GDP, + = debt falls</span></th>
+              <th class="text-right px-3 py-2.5 font-semibold"
+                title="Fiscal gap if the whole debt stock paid the IMF average interest rate (net interest paid divided by last year's debt) instead of the 10Y yield. Today's arithmetic rather than the margin">
+                Gap at average rate<span class="block font-normal text-slate-500">pp GDP, rate paid on stock</span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="Change in the fiscal gap against the selected comparison date, with the largest driver">
                 Change in gap<span class="block font-normal text-slate-500" x-text="'vs ' + (periodLabel || '—') + ', pp, main driver'"></span></th>
               <th class="text-right px-3 py-2.5 font-semibold" title="10Y yield at which the debt ratio is stable: g + 100 × primary balance × (1 + g) / debt">
@@ -179,7 +182,7 @@
           <template x-for="group in groups" :key="group.key">
             <tbody>
               <tr class="section-divider">
-                <td colspan="11">
+                <td colspan="12">
                   <span class="inline-flex items-center gap-1.5"><span
                       class="w-1.5 h-1.5 rounded-full inline-block" :class="group.dot"></span>
                     <span x-text="group.label"></span></span>
@@ -251,6 +254,14 @@
                   <td class="px-3 py-3 text-right font-bold text-base"
                     :class="c.fiscal_gap > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : c.fiscal_gap < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
                     x-text="fmtSigned(c.fiscal_gap)"></td>
+                  <!-- Fiscal gap at the IMF average interest rate -->
+                  <td class="px-3 py-3 text-right whitespace-nowrap cursor-help" :title="gapEffectiveTitle(c)">
+                    <div class="font-medium"
+                      :class="gapEffective(c) === null ? 'text-slate-400' : gapEffective(c) > 0.15 ? 'text-emerald-600 dark:text-emerald-400' : gapEffective(c) < -0.15 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'"
+                      x-text="gapEffective(c) === null ? '—' : fmtSigned(gapEffective(c))"></div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400" x-show="typeof c.r_eff === 'number'"
+                      x-text="'at ' + fmt(c.r_eff) + '%'"></div>
+                  </td>
                   <!-- Change in gap with main driver -->
                   <td class="px-3 py-3 text-right whitespace-nowrap cursor-help" :title="changeTitle(c)">
                     <span class="font-medium"
@@ -297,8 +308,15 @@
         <p>
           Click a value in the IMF or Market columns to edit it. Hover any header or value for detail.
           <span x-show="hasFlags"><span class="flag-dot"></span> marks a data note, hover for detail.</span>
-          Sources: team calculations, <span x-text="imfText"></span>, FRED.
         </p>
+        <p x-show="hasEffective">
+          Gap at average rate: the same calculation with the interest rate the government actually pays on its whole
+          stock (IMF net interest divided by last year's debt) instead of the 10Y yield. The headline gap shows where
+          debt dynamics are heading as debt is refinanced at market rates, this one shows today's arithmetic. The
+          difference is the refinancing pressure still to come. The average rate is net of interest received, so it
+          is low where governments hold large financial assets.
+        </p>
+        <p>Sources: team calculations, <span x-text="imfText"></span>, FRED.</p>
       </div>
     </div>
 

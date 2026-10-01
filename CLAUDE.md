@@ -47,6 +47,8 @@ python -m pytest -q
 - **Debt is end of previous year** (`debt_year` = forecast year minus 1), as in d_t = d_(t-1) x (1 + r) / (1 + g) - pb_t. History uses the same definition. `config.field_year()` maps each IMF field to its year
 - **No dates or release names in the markup.** Every year, month and IMF release on the page is built in `assets/app.js` from the data, with a neutral fallback when a field is missing. The key messages are generated sentences that drop out when their inputs are missing. Browser tests check the page with blocks removed, with an old schema, and with shifted years
 - `npm run build` stamps asset links in `index.html` with a content hash (`?v=`), so a deploy cannot mix a new page with cached old scripts
+- `r_eff` per country: IMF net interest (primary minus overall balance) x (1 + g) / debt at end of last year. The page shows the fiscal gap at this average rate next to the headline gap at the 10Y yield. It changes only with IMF releases, not with the yield shift. Gap at average rate is close to the IMF's projected fall in the debt ratio excluding other flows, a useful check
+- Fiscal gap uses a single forecast year on purpose (decided 1 Oct 2026): averaging would hide sensitivity
 - See `PLAN.md` for decisions and the roadmap
 
 ## Fiscal Framework (Nominal Terms)

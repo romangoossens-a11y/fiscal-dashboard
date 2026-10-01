@@ -90,3 +90,10 @@ def test_bridge_inputs_for_imf_debt_path():
     assert b["net_interest"] == pytest.approx(0.30)
     assert b["nominal_growth"] == pytest.approx(2.1)
     assert dynamics.imf_bridge(arch, "Apr2026", 2027) == {}
+
+
+def test_effective_rate():
+    # Japan, WEO April 2026: net interest 0.307% of GDP, nominal growth 2.09%, debt 206.5%
+    assert dynamics.effective_rate(0.307, 2.086, 206.5) == pytest.approx(0.152, abs=1e-3)
+    assert dynamics.effective_rate(None, 2.0, 100.0) is None
+    assert dynamics.effective_rate(1.0, 2.0, 0) is None

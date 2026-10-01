@@ -317,3 +317,19 @@ def test_drivers_toggle_stays_put(browser, base_url):
     positions.add(tuple(group.evaluate(where)))
     assert len(positions) == 1, positions
     page.close()
+
+
+def test_gap_at_average_rate(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""() => {
+        const d = window._dashboardReady;
+        const before = d.allCountries.map(c => [c.iso3, d.gapEffective(c)]);
+        d.setYieldShift(50);  // market move: headline gap changes, average rate does not
+        const after = Object.fromEntries(d.allCountries.map(c => [c.iso3, d.gapEffective(c)]));
+        return { missing: before.filter(([, v]) => v === null).length,
+                 moved: before.filter(([iso, v]) => Math.abs(after[iso] - v) > 1e-9).length };
+    }""")
+    assert result == {"missing": 0, "moved": 0}
+    assert "At the average interest rate actually paid" in page.locator("#key-messages").inner_text()
+    assert problems == []
+    page.close()

@@ -218,10 +218,25 @@ def debt_level_note(archive, label, prior, iso, year):
                               vintages.human(prior), vintages.human(label))
 
 
+def effective_rate(net_interest, nominal_growth, debt_prev):
+    """Average interest rate on the debt stock, % per year.
+
+    Net interest paid in year t (% of GDP_t) divided by debt at the end of
+    t-1 (% of GDP_(t-1)), rescaled by nominal growth so both sit on the same
+    GDP: i = interest_t x (1 + g) / d_(t-1).
+    """
+    if None in (net_interest, nominal_growth, debt_prev) or not debt_prev:
+        return None
+    return round(net_interest * (1 + nominal_growth / 100) / debt_prev * 100, 3)
+
+
 def attach(output, history, archive, run_date: date):
     label = output["imf"]["vintage"]
     output["comparisons"] = comparisons(history, run_date, archive, label)
     output["revisions"] = revisions(archive, label, output["projection_year"])
     output["imf_debt_paths"] = imf_debt_paths(archive, label, output["debt_year"])
     output["imf_bridge"] = imf_bridge(archive, label, output["projection_year"])
+    for c in output["countries"]:
+        b = output["imf_bridge"].get(c["iso3"], {})
+        c["r_eff"] = effective_rate(b.get("net_interest"), b.get("nominal_growth"), c.get("debt"))
     return output

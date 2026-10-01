@@ -161,6 +161,9 @@ function dashboard() {
       const period = this.periodMessage;
       if (period) out.push(prefix + period);
 
+      const eff = this.effectiveMessage;
+      if (eff) out.push(prefix + eff);
+
       const imf = this.imfMessage;
       if (imf) out.push(imf);
       return out;
@@ -187,6 +190,19 @@ function dashboard() {
       const share = Math.abs(top.sum) / absTotal;
       const phrase = DRIVER_PHRASES[top.key][top.sum >= 0 ? '1' : '-1'];
       return text + ', ' + (share > 0.95 ? 'entirely' : share > 0.6 ? 'mainly' : 'partly') + ' from ' + phrase + '.';
+    },
+    // Today's arithmetic at the average rate paid, against the margin
+    get effectiveMessage() {
+      const rows = this.allCountries.filter(c => typeof c.r_eff === 'number')
+        .map(c => ({ c, eff: this.gapEffective(c), diff: this.gapEffective(c) - c.fiscal_gap }));
+      if (!rows.length) return '';
+      const rising = rows.filter(x => x.eff < 0).length;
+      const top = rows.reduce((a, b) => (b.diff > a.diff ? b : a));
+      return 'At the average interest rate actually paid, the debt ratio is rising in ' +
+        (rising === rows.length ? 'all ' + rows.length : rising + ' of ' + rows.length) +
+        ' countries. Most refinancing pressure still to come: ' + this.countryRef(top.c.name) + ', where the gap is ' +
+        this.fmt(top.diff) + ' pp better at its ' + this.fmt(top.c.r_eff) + '% average rate than at the ' +
+        this.fmt(top.c.r) + '% 10Y yield.';
     },
     // What the latest IMF release changed
     get imfMessage() {
@@ -255,6 +271,23 @@ function dashboard() {
     // 10Y yield at which the debt ratio is stable.
     breakeven(c) {
       return c.g + 100 * c.pb * (1 + c.g / 100) / c.debt;
+    },
+    // Fiscal gap at the IMF average interest rate on the whole debt stock,
+    // instead of the 10Y yield: today's arithmetic rather than the margin.
+    // The rate only changes with an IMF release, so the yield shift leaves it.
+    gapEffective(c) {
+      if (typeof c.r_eff !== 'number') return null;
+      return c.pb - stabilisingBalance(c.r_eff, c.g, c.debt);
+    },
+    gapEffectiveTitle(c) {
+      if (typeof c.r_eff !== 'number') return 'Not available in this data';
+      return 'Fiscal gap if the whole debt stock paid the IMF average interest rate of ' + c.r_eff.toFixed(2) +
+        '% (net interest paid divided by last year\'s debt) instead of the ' + this.fmt(c.r) + '% 10Y yield. ' +
+        'The difference with the headline gap, ' + this.fmtSigned(this.gapEffective(c) - c.fiscal_gap) +
+        ' pp, is the refinancing pressure still to come as old debt rolls over at market rates.';
+    },
+    get hasEffective() {
+      return this.allCountries.some(c => typeof c.r_eff === 'number');
     },
     cushionBp(c) {
       return Math.round((this.breakeven(c) - c.r) * 100);
