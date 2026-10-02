@@ -390,3 +390,23 @@ def test_comparison_chart_without_net_interest_data(browser, base_url):
     assert labels == ["Fiscal gap", "Yield cushion"]
     assert problems == []
     page.close()
+
+
+def test_country_labels_are_not_clipped(browser, base_url):
+    # The axis must be wide enough for the longest country name in Inter.
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""async () => {
+        await document.fonts.ready;
+        const out = {};
+        for (const id of ['compareChart', 'driversChart']) {
+            const ch = Chart.getChart(id), ctx = ch.ctx;
+            ctx.save(); ctx.font = '12px Inter, sans-serif';
+            const need = Math.max(...ch.data.labels.map(l => ctx.measureText(l).width));
+            ctx.restore();
+            out[id] = ch.scales.y.width - need;
+        }
+        return out;
+    }""")
+    assert all(room >= 0 for room in result.values()), result
+    assert problems == []
+    page.close()

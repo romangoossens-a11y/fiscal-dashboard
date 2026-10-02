@@ -268,6 +268,15 @@ function dashboard() {
 
         this.selectedCountry = this.allCountries[0];
         window._dashboardReady = this;
+        // Chart.js measures axis labels when a chart is first drawn. Load the
+        // font first, or long country names are measured in the fallback font
+        // and clipped. Give up after a second so a font problem never blocks.
+        try {
+          await Promise.race([
+            Promise.all(['400 12px Inter', '600 12px Inter'].map(f => document.fonts.load(f))),
+            new Promise(resolve => setTimeout(resolve, 1000)),
+          ]);
+        } catch (e) { /* draw with the fallback font */ }
         this.$nextTick(() => { this.updateChart(); this.updateDrivers(); });
       } catch (e) {
         console.error('Failed to load fiscal_data.json:', e);
