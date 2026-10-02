@@ -2,8 +2,10 @@ name: Update Fiscal Data
 
 on:
   schedule:
-    # Every Monday at 8am UTC
-    - cron: '0 8 * * 1'
+    # Monday is the normal refresh. Thursday is a quiet recovery run if the
+    # first schedule was delayed or a source was temporarily unavailable.
+    # Minute 17 avoids the heavier GitHub Actions load at the start of an hour.
+    - cron: '17 8 * * 1,4'
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
 
