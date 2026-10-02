@@ -72,7 +72,9 @@ def test_page_renders_all_countries(browser, base_url):
     assert "Market yields" in status.inner_text()
     assert "IMF WEO" in status.inner_text()
     assert page.evaluate("typeof Chart !== 'undefined' && !!Chart.getChart('debtChart')")
+    assert page.evaluate("!!Chart.getChart('mechanicsChart')")
     assert "IMF WEO" in page.locator("#fiscal-table").locator("xpath=ancestor::div[contains(@class,'glass-card')]").inner_text()
+    assert "Antigravity Macro Research" not in page.locator("footer").inner_text()
     assert problems == []
     assert external == []
     page.close()
@@ -322,7 +324,7 @@ def test_theme_toggle_and_country_select(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
     page.locator(".theme-toggle").click()
     page.locator(".theme-toggle").click()
-    assert page.evaluate("!!Chart.getChart('driversChart') && !!Chart.getChart('debtChart')")
+    assert page.evaluate("!!Chart.getChart('driversChart') && !!Chart.getChart('debtChart') && !!Chart.getChart('mechanicsChart')")
     before = chart_state(page)
     page.locator("#trajectory-country").select_option("JPN")
     page.wait_for_timeout(300)
@@ -401,6 +403,8 @@ def test_comparison_chart_measures(browser, base_url):
         }""")
         assert state["n"] == N and state["sorted"] and state["matches"], (label, state)
         assert state["sets"] == (2 if label == "Gap at net interest rate" else 1)
+        if label == "Gap at net interest rate":
+            assert page.evaluate("Chart.getChart('compareChart').data.datasets[1].pointRadius") == 6
     # Scenario edits flow into the chart, reset restores it
     group.get_by_role("button", name="Fiscal gap", exact=True).click()
     page.wait_for_timeout(200)
@@ -432,7 +436,7 @@ def test_country_labels_are_not_clipped(browser, base_url):
     result = page.evaluate("""async () => {
         await document.fonts.ready;
         const out = {};
-        for (const id of ['compareChart', 'driversChart']) {
+        for (const id of ['compareChart', 'driversChart', 'mechanicsChart']) {
             const ch = Chart.getChart(id), ctx = ch.ctx;
             ctx.save(); ctx.font = '12px Inter, sans-serif';
             const need = Math.max(...ch.data.labels.map(l => ctx.measureText(l).width));
@@ -442,6 +446,40 @@ def test_country_labels_are_not_clipped(browser, base_url):
         return out;
     }""")
     assert all(room >= 0 for room in result.values()), result
+    assert problems == []
+    page.close()
+
+
+def test_full_mechanics_chart_measures_and_scenario(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    group = page.locator("[aria-label='Full mechanics measure']")
+    labels = group.locator("button").all_inner_texts()
+    assert labels == ["Debt", "Primary balance", "Nominal growth", "10Y yield", "r − g"]
+    for label in labels:
+        group.get_by_role("button", name=label, exact=True).click()
+        page.wait_for_timeout(150)
+        state = page.evaluate("""() => {
+            const d = window._dashboardReady;
+            const chart = Chart.getChart('mechanicsChart');
+            const metric = d.currentMechanicsMetric;
+            const expected = d.allCountries.map(c => metric.value(c)).sort((a, b) => b - a);
+            return {
+                n: chart.data.datasets[0].data.length,
+                values: chart.data.datasets[0].data,
+                expected,
+                selected: d.mechanicsMetric,
+            };
+        }""")
+        assert state["n"] == N
+        assert state["values"] == state["expected"]
+    group.get_by_role("button", name="10Y yield", exact=True).click()
+    before = page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()")
+    page.locator("#yield-shift").fill("50")
+    page.wait_for_timeout(200)
+    assert page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()") != before
+    page.locator("button", has_text="Reset to published data").first.click()
+    page.wait_for_timeout(200)
+    assert page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()") == before
     assert problems == []
     page.close()
 

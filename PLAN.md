@@ -85,5 +85,9 @@ Tick items off as they land.
 - [x] Full width horizontal momentum strip and full width country ranking
 - [x] Outlined cyan reference tick replaces hollow dots in the net interest view, without a connector line
 - [x] Debt trajectory placed before IMF revisions in the reading order
+- [x] Final full mechanics comparison chart for debt, primary balance, nominal growth, the 10Y yield and r minus g
+- [x] Filled fiscal gap reference dot in the net interest ranking, with a contrasting outline
+- [x] Colour band hierarchy for grouped headers in both analytical tables
+- [x] Remove the Antigravity framework credit from the footer
 - [x] Cadence aware freshness line, with IMF releases treated as semiannual
 - [x] Refresh schedule strengthened to Monday and Thursday at 08:17 UTC

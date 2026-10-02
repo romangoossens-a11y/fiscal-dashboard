@@ -122,6 +122,67 @@ html {
   color: #22d3ee;
 }
 
+/* Subtle source and calculation bands replace heavy underline rules in
+   grouped table headers. Adjacent colours make each span unambiguous. */
+.group-band {
+  border-top: 2px solid transparent;
+}
+
+.group-imf {
+  color: #6d5bd0;
+  background: rgba(127, 119, 221, 0.10);
+  border-top-color: #7f77dd;
+}
+
+.group-market {
+  color: #b54722;
+  background: rgba(216, 90, 48, 0.10);
+  border-top-color: #d85a30;
+}
+
+.group-debt {
+  color: #087f8c;
+  background: rgba(24, 167, 184, 0.10);
+  border-top-color: #18a7b8;
+}
+
+.group-trend {
+  color: #287a5e;
+  background: rgba(29, 158, 117, 0.10);
+  border-top-color: #1d9e75;
+}
+
+.group-threshold {
+  color: #9a6700;
+  background: rgba(239, 159, 39, 0.12);
+  border-top-color: #ef9f27;
+}
+
+.dark .group-imf {
+  color: #c4b5fd;
+  background: rgba(127, 119, 221, 0.14);
+}
+
+.dark .group-market {
+  color: #fdba9a;
+  background: rgba(216, 90, 48, 0.14);
+}
+
+.dark .group-debt {
+  color: #67e8f9;
+  background: rgba(24, 167, 184, 0.14);
+}
+
+.dark .group-trend {
+  color: #6ee7b7;
+  background: rgba(29, 158, 117, 0.14);
+}
+
+.dark .group-threshold {
+  color: #fcd34d;
+  background: rgba(239, 159, 39, 0.14);
+}
+
 /* Dark scrollbar */
 .dark ::-webkit-scrollbar {
   height: 6px;

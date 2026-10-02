@@ -42,6 +42,7 @@ function dashboard() {
   let _chart = null;    // stored outside Alpine proxy so assignments persist
   let _drivers = null;  // the "what moved the gap" chart, same reason
   let _compare = null;  // the country comparison chart, same reason
+  let _mechanics = null; // full mechanics measures by country
   return {
     // State
     drivers: DRIVERS,
@@ -63,6 +64,7 @@ function dashboard() {
     period: '1M',
     momentumPeriod: '1M',
     metric: 'gap',
+    mechanicsMetric: 'debt',
     tableView: 'summary',
     tableSortKey: 'fiscal_gap',
     tableSortDirection: 'desc',
@@ -379,6 +381,7 @@ function dashboard() {
       if (_chart) { _chart.destroy(); _chart = null; }
       if (_drivers) { _drivers.destroy(); _drivers = null; }
       if (_compare) { _compare.destroy(); _compare = null; }
+      if (_mechanics) { _mechanics.destroy(); _mechanics = null; }
       this.updateChart();
       this.updateDrivers();
     },
@@ -555,7 +558,7 @@ function dashboard() {
         { key: 'cushion', label: 'Yield cushion', unit: 'bp', digits: 0, value: c => this.cushionBp(c),
           note: 'How far the 10Y yield can rise before the debt ratio starts rising. Negative: the yield is already above that level.' },
         { key: 'net', label: 'Gap at net interest rate', unit: 'pp of GDP', digits: 1, value: c => this.gapEffective(c),
-          note: 'Fiscal gap at the net interest rate on the whole debt stock. The outlined cyan tick shows the headline gap at the 10Y yield.' },
+          note: 'Fiscal gap at the net interest rate on the whole debt stock. The filled reference dot shows the headline gap at the 10Y yield.' },
       ];
       return list.filter(m => m.key !== 'net' || this.hasEffective);
     },
@@ -566,6 +569,43 @@ function dashboard() {
       this.metric = key;
       try { localStorage.setItem('metric', key); } catch (e) { /* storage blocked */ }
       this.updateComparison();
+    },
+    get mechanicsMetrics() {
+      return [
+        {
+          key: 'debt', label: 'Debt', unit: '% GDP', digits: 1, value: c => c.debt,
+          note: 'General government gross debt at the end of ' + this.debtYearText + ', ranked from highest to lowest.',
+          color: '#7F77DD', signed: false,
+        },
+        {
+          key: 'pb', label: 'Primary balance', unit: '% GDP', digits: 1, value: c => c.pb,
+          note: 'General government primary balance for ' + (this.yearText || 'the forecast year') + '. Positive values are surpluses.',
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: true,
+        },
+        {
+          key: 'g', label: 'Nominal growth', unit: '%', digits: 1, value: c => c.g,
+          note: 'IMF nominal GDP growth for ' + (this.yearText || 'the forecast year') + ', combining real growth and the GDP deflator.',
+          color: '#18A7B8', signed: false,
+        },
+        {
+          key: 'r', label: '10Y yield', unit: '%', digits: 1, value: c => c.r,
+          note: 'Average 10Y government bond yield for ' + this.monthText + '.',
+          color: '#D85A30', signed: false,
+        },
+        {
+          key: 'r_g', label: 'r − g', unit: 'pp', digits: 1, value: c => c.r_g,
+          note: '10Y yield minus nominal growth. Negative values are more favourable for debt dynamics.',
+          color: value => value <= 0 ? '#1D9E75' : '#E95C6B', signed: true,
+        },
+      ];
+    },
+    get currentMechanicsMetric() {
+      return this.mechanicsMetrics.find(m => m.key === this.mechanicsMetric) || this.mechanicsMetrics[0];
+    },
+    setMechanicsMetric(key) {
+      if (!this.mechanicsMetrics.some(m => m.key === key)) return;
+      this.mechanicsMetric = key;
+      this.updateMechanics();
     },
     updateComparison() {
       const canvas = document.getElementById('compareChart');
@@ -580,7 +620,6 @@ function dashboard() {
       const tick = isDark ? '#94a3b8' : '#64748b';
       const grid = isDark ? 'rgba(100,116,139,0.15)' : 'rgba(148,163,184,0.15)';
       const pos = isDark ? '#34d399' : '#059669', neg = isDark ? '#f87171' : '#dc2626';
-      const accent = isDark ? '#22d3ee' : '#0891b2';
       const f = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(m.digits);
       const datasets = [{
         label: m.label, data: rows.map(r => r.v), barThickness: 18, order: 2,
@@ -589,8 +628,8 @@ function dashboard() {
       if (m.key === 'net') {
         datasets.push({
           type: 'line', label: 'Fiscal gap at the 10Y yield', data: rows.map(r => r.headline), indexAxis: 'y',
-          showLine: false, pointRadius: 0, pointHoverRadius: 0, pointHitRadius: 8,
-          backgroundColor: 'transparent', borderColor: accent, borderWidth: 0, order: 1,
+          showLine: false, pointStyle: 'circle', pointRadius: 6, pointHoverRadius: 7, pointHitRadius: 8,
+          backgroundColor: ink, borderColor: isDark ? '#0f172a' : '#ffffff', borderWidth: 2.5, order: 1,
         });
       }
       const all = rows.flatMap(r => (m.key === 'net' ? [r.v, r.headline] : [r.v]));
@@ -641,38 +680,10 @@ function dashboard() {
           ctx.restore();
         },
       };
-      const headlineMarker = {
-        id: 'headlineMarker',
-        afterDatasetsDraw(chart) {
-          if (chart.data.datasets.length < 2) return;
-          const bars = chart.getDatasetMeta(0).data;
-          const values = chart.data.datasets[1].data;
-          const xScale = chart.scales.x;
-          const ctx = chart.ctx;
-          ctx.save();
-          ctx.lineCap = 'round';
-          bars.forEach((bar, i) => {
-            const headlineX = xScale.getPixelForValue(values[i]);
-            ctx.strokeStyle = isDark ? '#0f172a' : '#ffffff';
-            ctx.lineWidth = 7;
-            ctx.beginPath();
-            ctx.moveTo(headlineX, bar.y - 8);
-            ctx.lineTo(headlineX, bar.y + 8);
-            ctx.stroke();
-            ctx.strokeStyle = accent;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(headlineX, bar.y - 8);
-            ctx.lineTo(headlineX, bar.y + 8);
-            ctx.stroke();
-          });
-          ctx.restore();
-        },
-      };
       _compare = new Chart(canvas, {
         type: 'bar',
         data,
-        plugins: [zeroLine, headlineMarker, valueLabel],
+        plugins: [zeroLine, valueLabel],
         options: {
           indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
           layout: { padding: { left: 8, right: 8 } },
@@ -1018,6 +1029,145 @@ function dashboard() {
       });
     },
 
+    // ── Full mechanics measures from the table, one comparable measure at
+    // a time. Scenario edits flow through because the chart reads the same
+    // country objects as the table.
+    updateMechanics() {
+      const canvas = document.getElementById('mechanicsChart');
+      if (!canvas || typeof Chart === 'undefined' || !this.allCountries.length) return;
+      const m = this.currentMechanicsMetric;
+      const rows = this.allCountries
+        .map(c => ({ name: c.name, value: m.value(c) }))
+        .filter(row => typeof row.value === 'number' && !isNaN(row.value))
+        .sort((a, b) => b.value - a.value);
+      const isDark = document.documentElement.classList.contains('dark');
+      const ink = isDark ? '#f1f5f9' : '#0f172a';
+      const tick = isDark ? '#94a3b8' : '#64748b';
+      const grid = isDark ? 'rgba(100,116,139,0.15)' : 'rgba(148,163,184,0.15)';
+      const values = rows.map(row => row.value);
+      const low = Math.min(0, ...values);
+      const high = Math.max(0, ...values);
+      const span = Math.max(high - low, 1);
+      const roughStep = span / 6;
+      const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+      const normalised = roughStep / magnitude;
+      const step = (normalised <= 1 ? 1 : normalised <= 2 ? 2 : normalised <= 5 ? 5 : 10) * magnitude;
+      const allPositive = values.every(value => value >= 0);
+      const allNegative = values.every(value => value <= 0);
+      const compact = canvas.clientWidth < 430;
+      const pad = allPositive
+        ? Math.max(span * (compact ? 0.20 : 0.10), step * (compact ? 1 : 0.5))
+        : Math.max(span * (compact ? 0.25 : 0.15), step);
+      const xs = {
+        min: allPositive ? 0 : Math.floor((low - pad) / step) * step,
+        max: allNegative ? 0 : Math.ceil((high + pad) / step) * step,
+      };
+      const colour = value => typeof m.color === 'function' ? m.color(value) : m.color;
+      const data = {
+        labels: rows.map(row => row.name),
+        datasets: [{
+          label: m.label,
+          data: values,
+          backgroundColor: values.map(colour),
+          borderRadius: 3,
+          barThickness: 18,
+        }],
+      };
+      if (_mechanics) {
+        _mechanics.data = data;
+        Object.assign(_mechanics.options.scales.x, xs);
+        _mechanics.options.scales.x.ticks.stepSize = step;
+        _mechanics.options.scales.x.title.text = m.label + ', ' + m.unit;
+        _mechanics.options.plugins.valueDigits = m.digits;
+        _mechanics.options.plugins.valueSigned = m.signed;
+        _mechanics.update('none');
+        return;
+      }
+      const valueLabel = {
+        id: 'mechanicsValueLabel',
+        afterDatasetsDraw(chart) {
+          const ds = chart.data.datasets[0];
+          const meta = chart.getDatasetMeta(0);
+          const ctx = chart.ctx;
+          const digits = chart.options.plugins.valueDigits;
+          const signed = chart.options.plugins.valueSigned;
+          ctx.save();
+          ctx.font = '600 12px Inter, sans-serif';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = ink;
+          meta.data.forEach((bar, i) => {
+            const value = ds.data[i];
+            const right = value >= 0;
+            ctx.textAlign = right ? 'left' : 'right';
+            const text = (signed && value > 0 ? '+' : value < 0 ? '−' : '') + Math.abs(value).toFixed(digits);
+            ctx.fillText(text, bar.x + (right ? 8 : -8), bar.y);
+          });
+          ctx.restore();
+        },
+      };
+      const zeroLine = {
+        id: 'mechanicsZeroLine',
+        beforeDatasetsDraw(chart) {
+          const x = chart.scales.x.getPixelForValue(0);
+          const area = chart.chartArea;
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.strokeStyle = isDark ? 'rgba(241,245,249,0.45)' : 'rgba(15,23,42,0.4)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, area.top);
+          ctx.lineTo(x, area.bottom);
+          ctx.stroke();
+          ctx.restore();
+        },
+      };
+      _mechanics = new Chart(canvas, {
+        type: 'bar',
+        data,
+        plugins: [zeroLine, valueLabel],
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 250 },
+          layout: { padding: { left: 8, right: 8 } },
+          plugins: {
+            legend: { display: false },
+            valueDigits: m.digits,
+            valueSigned: m.signed,
+            tooltip: {
+              callbacks: {
+                label: context => context.dataset.label + ': ' + context.raw.toFixed(this.currentMechanicsMetric.digits) + ' ' + this.currentMechanicsMetric.unit,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ...xs,
+              grid: { color: grid },
+              border: { display: false },
+              ticks: {
+                color: tick,
+                stepSize: step,
+                font: { family: 'Inter', size: 11 },
+                callback(value) {
+                  const signed = this.chart.options.plugins.valueSigned;
+                  return (signed && value > 0 ? '+' : value < 0 ? '−' : '') + Math.abs(value);
+                },
+              },
+              title: { display: true, text: m.label + ', ' + m.unit, color: tick, font: { family: 'Inter', size: 11 } },
+            },
+            y: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { color: tick, autoSkip: false, font: { family: 'Inter', size: 12 } },
+            },
+          },
+        },
+      });
+      document.fonts?.ready.then(() => _mechanics && _mechanics.update('none'));
+    },
+
     // ── "What moved the fiscal gap": stacked contributions per country with
     // a dot for the net change.
     updateDrivers() {
@@ -1025,6 +1175,7 @@ function dashboard() {
       // drivers chart, and the comparison chart must follow them.
       if (_compare) _compare.options.plugins.valueDigits = this.currentMetric.digits;
       this.updateComparison();
+      this.updateMechanics();
       const canvas = document.getElementById('driversChart');
       if (!canvas || typeof Chart === 'undefined') return;
       const rows = this.allCountries
