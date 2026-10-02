@@ -63,6 +63,11 @@ def test_page_renders_all_countries(browser, base_url):
     page, problems, external = open_page(browser, base_url)
     rows = page.locator("#fiscal-table tbody tr:not(.section-divider)")
     assert rows.count() == N
+    status = page.locator("#freshness-status")
+    assert status.is_visible()
+    assert "Data checked" in status.inner_text()
+    assert "Market yields" in status.inner_text()
+    assert "IMF WEO" in status.inner_text()
     assert page.evaluate("typeof Chart !== 'undefined' && !!Chart.getChart('debtChart')")
     assert "IMF WEO" in page.locator("#fiscal-table").locator("xpath=ancestor::div[contains(@class,'glass-card')]").inner_text()
     assert problems == []
@@ -187,6 +192,29 @@ def test_page_survives_old_schema_countries(browser, base_url):
     assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == N
     text = visible_text(page)
     assert not any(bad in text for bad in BAD_TEXT)
+    assert problems == []
+    page.close()
+
+
+def test_freshness_notice_distinguishes_refresh_delay_and_carried_values(browser, base_url):
+    payload = real_payload()
+    payload["last_updated"] = "2000-01-01"
+    page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
+    status = page.locator("#freshness-status")
+    assert "Update delayed" in status.inner_text()
+    assert "Market data may no longer reflect the latest yields" in status.inner_text()
+    assert problems == []
+    page.close()
+
+    payload = real_payload()
+    payload["countries"][0].setdefault("flags", []).append({
+        "field": "r", "kind": "carried_forward", "message": "Test warning",
+    })
+    payload["data_status"] = ["Test warning"]
+    page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
+    status = page.locator("#freshness-status")
+    assert "carried forward" in status.inner_text()
+    assert status.get_by_text("Data status").is_visible()
     assert problems == []
     page.close()
 

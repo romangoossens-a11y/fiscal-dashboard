@@ -7,7 +7,7 @@
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
     content="Fiscal sustainability of major advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
-  <link rel="stylesheet" href="assets/app.css?v=f073bf84" />
+  <link rel="stylesheet" href="assets/app.css?v=a380e9a1" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=ea84dc5b"></script>
+  <script defer src="assets/app.js?v=9952a6d1"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -70,6 +70,22 @@
       </div>
     </div>
   </header>
+
+  <!-- One quiet, cadence-aware freshness line. It turns amber only when the
+       dashboard refresh is delayed or a value has been carried forward. -->
+  <div x-show="allCountries.length > 0" class="border-b transition-colors"
+    :class="hasFreshnessWarning
+      ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200'
+      : 'bg-white/60 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'"
+    role="status" aria-live="polite" id="freshness-status">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 text-xs flex items-start sm:items-center gap-2">
+      <span class="mt-1 sm:mt-0 w-1.5 h-1.5 rounded-full flex-shrink-0"
+        :class="hasFreshnessWarning ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+      <span class="min-w-0" x-text="hasFreshnessWarning ? freshnessWarningText : freshnessText"></span>
+      <a x-show="hasFreshnessWarning && dataStatus.length > 0" href="#data-status-details"
+        class="ml-auto whitespace-nowrap font-medium underline decoration-dotted underline-offset-2 hover:text-amber-700 dark:hover:text-amber-100">Data status</a>
+    </div>
+  </div>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
@@ -285,7 +301,7 @@
         </table>
       </div>
 
-      <div x-show="dataStatus.length > 0"
+      <div x-show="dataStatus.length > 0" id="data-status-details"
         class="px-4 sm:px-6 py-3 border-t border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/30 text-xs text-amber-800 dark:text-amber-300">
         <div class="font-semibold mb-1 flex items-center gap-1.5"><span class="flag-dot"></span> Data status</div>
         <ul class="space-y-0.5">

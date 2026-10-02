@@ -152,6 +152,35 @@ function dashboard() {
       if (!this.lastUpdated) return false;
       return (Date.now() - new Date(this.lastUpdated + 'T00:00:00Z').getTime()) / 86400000 > 10;
     },
+    get hasCarriedForwardData() {
+      return this.allCountries.some(c => (c.flags || []).some(f => f.kind === 'carried_forward'));
+    },
+    get hasLaggingMarketData() {
+      return this.allCountries.some(c => (c.flags || []).some(f => f.kind === 'lagging'));
+    },
+    get hasFreshnessWarning() {
+      return this.isStale || this.hasCarriedForwardData || this.hasLaggingMarketData;
+    },
+    get freshnessText() {
+      const parts = [];
+      if (this.lastUpdated) parts.push('Data checked ' + this.dateLabel(this.lastUpdated));
+      if (this.typicalMonth) parts.push('Market yields ' + this.monthLabel(this.typicalMonth) + ' averages');
+      if (this.imfLabel) parts.push('IMF WEO ' + this.imfLabel);
+      return parts.join(' · ');
+    },
+    get freshnessWarningText() {
+      if (this.isStale) {
+        return 'Update delayed · This dashboard was last refreshed on ' + this.dateLabel(this.lastUpdated) +
+          '. Market data may no longer reflect the latest yields.';
+      }
+      if (this.hasCarriedForwardData) {
+        return 'Some values could not be refreshed and have been carried forward. Affected figures are marked with an amber dot.';
+      }
+      if (this.hasLaggingMarketData) {
+        return 'Some market yields are older than expected. Affected figures are marked with an amber dot.';
+      }
+      return '';
+    },
 
     // ── Key messages: generated sentences. A sentence whose inputs are
     // missing is left out rather than shown with gaps.
