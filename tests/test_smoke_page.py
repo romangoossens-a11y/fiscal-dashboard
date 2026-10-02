@@ -448,7 +448,15 @@ def test_country_labels_are_not_clipped(browser, base_url):
 
 def test_executive_momentum_is_generated_from_comparisons(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
-    for label, key in (("1 month", "1M"), ("6 months", "6M")):
+    strongest = page.evaluate("""() => {
+        const d = window._dashboardReady;
+        const expected = [...d.allCountries].sort((a, b) => b.fiscal_gap - a.fiscal_gap)[0];
+        const card = d.executiveCards.find(c => c.label === 'Strongest fiscal position');
+        return { value: card.value, expected: expected.name, note: card.note };
+    }""")
+    assert strongest["value"] == strongest["expected"]
+    assert "pp fiscal gap" in strongest["note"]
+    for label, key in (("1 month", "1M"), ("6 months", "6M"), ("1 year", "1Y")):
         page.get_by_role("button", name=label, exact=True).click()
         page.wait_for_timeout(200)
         state = page.evaluate("""key => {

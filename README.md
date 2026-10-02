@@ -9,11 +9,11 @@ Based on the framework from the Antigravity Macro Research November 2025 report.
 
 ## What It Shows
 
-1. **Executive overview**: four decision indicators, the countries whose fiscal gaps improved and worsened most over one or six months, and a ranked country comparison. Every statement is generated from the current data.
+1. **Executive overview**: four decision indicators, including the strongest and weakest fiscal positions, the countries whose fiscal gaps improved and worsened most over one month, six months or one year, and a ranked country comparison. Every statement is generated from the current data.
 2. **Fiscal position**: a concise decision view by default, with a full mechanics view for debt, growth, rates, stabilising balance and breakeven yield. The mobile layout uses country cards instead of forcing the wide table onto a small screen.
 3. **What moved the fiscal gap**: the change in each country's gap split into the 10Y yield, real growth, GDP deflator and fiscal stance, with a dot for the net change.
 4. **How the IMF changed its view**: current year primary balance and projected debt change, previous IMF release versus the latest, with a verdict.
-5. **Debt trajectory simulation**: a ten year debt path for a selected country against the IMF forecast.
+5. **Debt trajectory simulation**: a ten year debt path for a selected country against the IMF forecast. It appears before the IMF revisions table so the debt mechanism is clear before the slower moving vintage comparison.
 
 The page is responsive for desktop, Android and iOS. Click any highlighted value in the full mechanics table to edit it, or shift all yields at once. Scenario changes flow through the overview, ranking, table and charts.
 

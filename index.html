@@ -8,7 +8,7 @@
   <meta name="description"
     content="Fiscal sustainability of major advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED, OECD and IMF data." />
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="assets/app.css?v=63febe1e" />
+  <link rel="stylesheet" href="assets/app.css?v=68d0f3a8" />
   <script>
     // Apply saved theme before paint to avoid flash
     try {
@@ -20,7 +20,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=d105ba21"></script>
+  <script defer src="assets/app.js?v=1beef9f6"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -138,15 +138,15 @@
         </template>
       </div>
 
-      <div class="grid grid-cols-1 xl:grid-cols-5 gap-4">
+      <div class="space-y-4">
         <!-- Largest recent moves, calculated from the same decomposition as the drivers chart -->
-        <article class="glass-card xl:col-span-2 overflow-hidden">
-          <div class="px-4 sm:px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+        <article class="glass-card overflow-hidden">
+          <div class="px-4 sm:px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h3 class="text-base font-semibold text-slate-950 dark:text-white">Fiscal momentum</h3>
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="momentumCaption"></p>
             </div>
-            <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs" role="group" aria-label="Momentum period">
+            <div class="inline-flex self-start rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs" role="group" aria-label="Momentum period">
               <template x-for="p in momentumPeriods" :key="p.key">
                 <button type="button" class="px-2.5 py-1.5 transition-colors whitespace-nowrap" @click="setMomentumPeriod(p.key)"
                   :aria-pressed="momentumPeriod === p.key"
@@ -155,7 +155,7 @@
               </template>
             </div>
           </div>
-          <div class="p-4 sm:p-5 space-y-3">
+          <div class="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
             <template x-if="momentumLeaders.improved">
               <div class="rounded-xl border border-emerald-200/80 dark:border-emerald-900/70 bg-emerald-50/70 dark:bg-emerald-950/20 p-4">
                 <div class="flex items-start justify-between gap-3">
@@ -186,12 +186,12 @@
                   :class="momentumDriver(momentumLeaders.worsened)?.tagClass" x-text="momentumDriver(momentumLeaders.worsened)?.label"></span>
               </div>
             </template>
-            <p class="text-xs text-slate-500 dark:text-slate-400">The explanation identifies the largest contribution in the direction of the net move. Full contributions remain in the drivers section.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 md:col-span-2">The explanation identifies the largest contribution in the direction of the net move. Full contributions remain in the drivers section.</p>
           </div>
         </article>
 
         <!-- Country ranking: one measure at a time -->
-        <article class="glass-card xl:col-span-3 overflow-hidden">
+        <article class="glass-card overflow-hidden">
           <div class="px-4 sm:px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div class="min-w-0 md:flex-1">
               <h3 class="text-base font-semibold text-slate-950 dark:text-white">Country ranking</h3>
@@ -210,6 +210,11 @@
             <div class="flex flex-wrap gap-x-4 gap-y-1 mb-2 text-[11px] text-slate-600 dark:text-slate-300">
               <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-emerald-600"></span>Stable or falling</span>
               <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-rose-600"></span>Rising</span>
+              <span class="flex items-center gap-1.5" x-show="metric === 'net'">
+                <span class="relative w-5 h-3 inline-block">
+                  <span class="absolute left-0 right-0 top-1.5 border-t-2 border-cyan-500/60"></span>
+                  <span class="absolute left-2 top-0.5 h-2.5 border-l-[3px] border-cyan-500 rounded-full"></span>
+                </span>Fiscal gap at the 10Y yield</span>
             </div>
             <div class="relative" :style="'height: ' + (allCountries.length * 34 + 60) + 'px'">
               <canvas id="compareChart" role="img" :aria-label="'Countries ranked by ' + currentMetric.label + ', ' + currentMetric.unit"></canvas>
@@ -556,8 +561,11 @@
       </div>
     </div>
 
+    <!-- The trajectory is visually first because it explains the mechanism
+         before the reader reaches the slower moving IMF vintage comparison. -->
+    <div class="flex flex-col gap-6 sm:gap-8">
     <!-- ── IMF Revisions Card ── -->
-    <div id="imf-revisions" class="glass-card fade-in scroll-mt-24" style="animation-delay: 0.2s" x-show="revisions && allCountries.length > 0">
+    <div id="imf-revisions" class="glass-card fade-in scroll-mt-24 order-2" style="animation-delay: 0.25s" x-show="revisions && allCountries.length > 0">
       <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
         <h2 class="text-base font-semibold text-slate-900 dark:text-white">How the IMF Changed Its View</h2>
         <p class="text-sm text-slate-700 dark:text-slate-200 mt-1" x-text="imfMessage"></p>
@@ -621,7 +629,7 @@
     </div>
 
     <!-- ── Debt Trajectory Card ── -->
-    <div id="trajectory" class="glass-card fade-in scroll-mt-24" style="animation-delay: 0.25s" x-show="allCountries.length > 0">
+    <div id="trajectory" class="glass-card fade-in scroll-mt-24 order-1" style="animation-delay: 0.2s" x-show="allCountries.length > 0">
       <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
         <h2 class="text-base font-semibold text-slate-900 dark:text-white">Debt Trajectory Simulation</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
@@ -715,6 +723,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <!-- ── Footer ── -->

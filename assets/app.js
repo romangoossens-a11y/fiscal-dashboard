@@ -120,23 +120,21 @@ function dashboard() {
     get executiveCards() {
       if (!this.allCountries.length) return [];
       const n = this.allCountries.length;
-      const closest = [...this.allCountries]
-        .sort((a, b) => Math.abs(this.cushionBp(a)) - Math.abs(this.cushionBp(b)))[0];
+      const strongest = [...this.allCountries].sort((a, b) => b.fiscal_gap - a.fiscal_gap)[0];
       const weakest = [...this.allCountries].sort((a, b) => a.fiscal_gap - b.fiscal_gap)[0];
       const refinancing = this.allCountries
         .filter(c => typeof c.r_eff === 'number')
         .map(c => ({ c, pressure: this.gapEffective(c) - c.fiscal_gap }))
         .sort((a, b) => b.pressure - a.pressure)[0];
-      const cushion = this.cushionBp(closest);
       return [
         {
           label: 'Debt ratio rising', value: this.unsustainableCountries.length + ' of ' + n,
           note: 'At current 10Y yields', tone: 'rose',
         },
         {
-          label: 'Closest to stability', value: closest.name,
-          note: Math.abs(cushion) + ' bp ' + (cushion < 0 ? 'above' : 'below') + ' breakeven',
-          tone: cushion < 0 ? 'amber' : 'emerald',
+          label: 'Strongest fiscal position', value: strongest.name,
+          note: this.fmtSigned(strongest.fiscal_gap) + ' pp fiscal gap',
+          tone: strongest.fiscal_gap >= 0 ? 'emerald' : 'amber',
         },
         {
           label: 'Weakest fiscal gap', value: weakest.name,
@@ -161,8 +159,9 @@ function dashboard() {
       return this.comparisons?.[this.period] || null;
     },
     get momentumPeriods() {
-      return ['1M', '6M'].filter(k => this.comparisons?.[k]?.countries)
-        .map(k => ({ key: k, label: k === '1M' ? '1 month' : '6 months' }));
+      const labels = { '1M': '1 month', '6M': '6 months', '1Y': '1 year' };
+      return Object.keys(labels).filter(k => this.comparisons?.[k]?.countries)
+        .map(k => ({ key: k, label: labels[k] }));
     },
     get momentumReference() {
       return this.comparisons?.[this.momentumPeriod] || null;
@@ -497,7 +496,7 @@ function dashboard() {
         { key: 'cushion', label: 'Yield cushion', unit: 'bp', digits: 0, value: c => this.cushionBp(c),
           note: 'How far the 10Y yield can rise before the debt ratio starts rising. Negative: the yield is already above that level.' },
         { key: 'net', label: 'Gap at net interest rate', unit: 'pp of GDP', digits: 1, value: c => this.gapEffective(c),
-          note: 'Fiscal gap at the net interest rate on the whole debt stock. The hollow marker is the headline gap at the 10Y yield. The distance between them is the refinancing pressure still to come.' },
+          note: 'Fiscal gap at the net interest rate on the whole debt stock. The cyan tick shows the headline gap at the 10Y yield and the connector shows the refinancing pressure still to come.' },
       ];
       return list.filter(m => m.key !== 'net' || this.hasEffective);
     },
@@ -522,6 +521,7 @@ function dashboard() {
       const tick = isDark ? '#94a3b8' : '#64748b';
       const grid = isDark ? 'rgba(100,116,139,0.15)' : 'rgba(148,163,184,0.15)';
       const pos = isDark ? '#34d399' : '#059669', neg = isDark ? '#f87171' : '#dc2626';
+      const accent = isDark ? '#22d3ee' : '#0891b2';
       const f = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(m.digits);
       const datasets = [{
         label: m.label, data: rows.map(r => r.v), barThickness: 18, order: 2,
@@ -530,8 +530,8 @@ function dashboard() {
       if (m.key === 'net') {
         datasets.push({
           type: 'line', label: 'Fiscal gap at the 10Y yield', data: rows.map(r => r.headline), indexAxis: 'y',
-          showLine: false, pointStyle: 'circle', pointRadius: 6, pointHoverRadius: 7,
-          backgroundColor: 'transparent', borderColor: ink, borderWidth: 2, order: 1,
+          showLine: false, pointRadius: 0, pointHoverRadius: 0, pointHitRadius: 8,
+          backgroundColor: 'transparent', borderColor: accent, borderWidth: 0, order: 1,
         });
       }
       const all = rows.flatMap(r => (m.key === 'net' ? [r.v, r.headline] : [r.v]));
@@ -582,10 +582,39 @@ function dashboard() {
           ctx.restore();
         },
       };
+      const headlineMarker = {
+        id: 'headlineMarker',
+        afterDatasetsDraw(chart) {
+          if (chart.data.datasets.length < 2) return;
+          const bars = chart.getDatasetMeta(0).data;
+          const values = chart.data.datasets[1].data;
+          const xScale = chart.scales.x;
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.strokeStyle = accent;
+          ctx.lineCap = 'round';
+          bars.forEach((bar, i) => {
+            const headlineX = xScale.getPixelForValue(values[i]);
+            ctx.globalAlpha = 0.4;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(bar.x, bar.y);
+            ctx.lineTo(headlineX, bar.y);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(headlineX, bar.y - 7);
+            ctx.lineTo(headlineX, bar.y + 7);
+            ctx.stroke();
+          });
+          ctx.restore();
+        },
+      };
       _compare = new Chart(canvas, {
         type: 'bar',
         data,
-        plugins: [zeroLine, valueLabel],
+        plugins: [zeroLine, headlineMarker, valueLabel],
         options: {
           indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
           layout: { padding: { left: 8, right: 8 } },
