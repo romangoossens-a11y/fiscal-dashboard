@@ -474,7 +474,11 @@ def test_full_mechanics_chart_measures_and_scenario(browser, base_url):
         assert state["n"] == N
         assert state["values"] == state["expected"]
         for value, colour in zip(state["values"], state["colours"]):
-            assert colour == ("#1D9E75" if value >= 0 else "#E95C6B")
+            if label == "r − g":
+                expected_colour = "#E95C6B" if value > 0 else "#1D9E75" if value < 0 else "#94A3B8"
+            else:
+                expected_colour = "#1D9E75" if value >= 0 else "#E95C6B"
+            assert colour == expected_colour
     group.get_by_role("button", name="10Y yield", exact=True).click()
     before = page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()")
     page.locator("#yield-shift").fill("50")

@@ -86,7 +86,7 @@ Tick items off as they land.
 - [x] Filled fiscal gap reference dot in the net interest view, with a contrasting outline and no connector line
 - [x] Debt trajectory placed before IMF revisions in the reading order
 - [x] Final Fiscal Data by Country chart for debt, primary balance, nominal growth, the 10Y yield and r minus g
-- [x] Consistent chart height, bar thickness and positive or negative colours across country bar charts
+- [x] Consistent chart height and bar thickness across country bar charts. Shared positive green and negative rose colours, with the economically directional inverse for r minus g
 - [x] Tighter dynamic driver axis so short horizon moves use the available width
 - [x] Colour band hierarchy for grouped headers in both analytical tables
 - [x] Remove the Antigravity framework credit from the footer

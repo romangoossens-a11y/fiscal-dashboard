@@ -594,8 +594,8 @@ function dashboard() {
         },
         {
           key: 'r_g', label: 'r − g', unit: 'pp', digits: 1, value: c => c.r_g,
-          note: '10Y yield minus nominal growth. Negative values are more favourable for debt dynamics.',
-          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: true,
+          note: '10Y yield minus nominal growth. Negative values are more favourable for debt dynamics and are shown in green.',
+          color: value => value > 0 ? '#E95C6B' : value < 0 ? '#1D9E75' : '#94A3B8', signed: true,
         },
       ];
     },

@@ -25,7 +25,7 @@ This file is the entry point for Codex and other coding agents. Read `CLAUDE.md`
 
 * Scenario edits must flow through the overview, tables, Country Ranking, What Moved the Fiscal Gap, debt trajectory and Fiscal Data by Country.
 * The Country Ranking, drivers and Fiscal Data by Country charts use the same height formula and bar thickness.
-* Positive values use the shared green and negative values use the shared rose in country bar charts.
+* Positive values use the shared green and negative values use the shared rose in country bar charts. The exception is r minus g, where positive is adverse and rose while negative is favourable and green.
 * Fiscal momentum supports one month, six months and one year. Its explanations must use the same decomposition as the detailed drivers chart.
 * The decision table and full mechanics table are two views of the same data. Every metric remains sortable in both directions.
 * Mobile behaviour must be checked for narrow Android and iOS widths. Preserve safe area padding and touch sized controls.
