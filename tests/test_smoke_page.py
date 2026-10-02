@@ -38,8 +38,11 @@ def browser():
     with sync_api.sync_playwright() as p:
         try:
             b = p.chromium.launch()
-        except Exception as exc:  # noqa: BLE001
-            pytest.skip(f"Chromium not available: {exc}")
+        except Exception as bundled_exc:  # noqa: BLE001
+            try:
+                b = p.chromium.launch(channel="chrome")
+            except Exception as system_exc:  # noqa: BLE001
+                pytest.skip(f"Chromium not available: {bundled_exc}; system Chrome: {system_exc}")
         yield b
         b.close()
 
@@ -69,7 +72,9 @@ def test_page_renders_all_countries(browser, base_url):
     assert "Market yields" in status.inner_text()
     assert "IMF WEO" in status.inner_text()
     assert page.evaluate("typeof Chart !== 'undefined' && !!Chart.getChart('debtChart')")
+    assert page.evaluate("!!Chart.getChart('mechanicsChart')")
     assert "IMF WEO" in page.locator("#fiscal-table").locator("xpath=ancestor::div[contains(@class,'glass-card')]").inner_text()
+    assert "Antigravity Macro Research" not in page.locator("footer").inner_text()
     assert problems == []
     assert external == []
     page.close()
@@ -80,7 +85,7 @@ def test_row_click_selects_country(browser, base_url):
     page.locator("#fiscal-table tbody tr", has_text="Japan").click()
     page.wait_for_timeout(300)
     assert page.evaluate("window._dashboardReady.selectedCountry.iso3") == "JPN"
-    assert page.locator("select").input_value() == "JPN"
+    assert page.locator("#trajectory-country").input_value() == "JPN"
     assert problems == []
     page.close()
 
@@ -268,6 +273,7 @@ def test_cell_edit_then_reset_restores_everything(browser, base_url):
     message = page.locator("#key-messages li").first.inner_text()
 
     # Edit France's nominal growth in the table
+    page.get_by_role("button", name="Full mechanics", exact=True).click()
     page.locator("#fiscal-table tbody tr", has_text="France").locator(".editable-cell").nth(2).click()
     box = page.locator("#fiscal-table input.table-input")
     box.fill("6.0")
@@ -277,7 +283,7 @@ def test_cell_edit_then_reset_restores_everything(browser, base_url):
     assert chart_state(page) != published_charts
 
     # Reset from the drivers card
-    page.locator("button", has_text="Reset to published data").nth(1).click()
+    page.locator("button", has_text="Reset to published data").first.click()
     page.wait_for_timeout(300)
     assert table_state(page) == published_table
     assert chart_state(page) == published_charts
@@ -318,12 +324,12 @@ def test_theme_toggle_and_country_select(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
     page.locator(".theme-toggle").click()
     page.locator(".theme-toggle").click()
-    assert page.evaluate("!!Chart.getChart('driversChart') && !!Chart.getChart('debtChart')")
+    assert page.evaluate("!!Chart.getChart('driversChart') && !!Chart.getChart('debtChart') && !!Chart.getChart('mechanicsChart')")
     before = chart_state(page)
-    page.locator("select").select_option("JPN")
+    page.locator("#trajectory-country").select_option("JPN")
     page.wait_for_timeout(300)
     assert chart_state(page) != before
-    assert "Japan" in page.locator("select").locator("option:checked").inner_text()
+    assert "Japan" in page.locator("#trajectory-country option:checked").inner_text()
     assert problems == []
     page.close()
 
@@ -360,7 +366,7 @@ def test_gap_at_net_interest_rate(browser, base_url):
                  moved: before.filter(([iso, v]) => Math.abs(after[iso] - v) > 1e-9).length };
     }""")
     assert result == {"missing": 0, "moved": 0}
-    assert "At the net interest rate governments pay on their debt" in page.locator("#key-messages").inner_text()
+    assert "At the net interest rate governments pay on their debt" in page.locator("#key-messages").text_content()
     assert problems == []
     page.close()
 
@@ -397,6 +403,8 @@ def test_comparison_chart_measures(browser, base_url):
         }""")
         assert state["n"] == N and state["sorted"] and state["matches"], (label, state)
         assert state["sets"] == (2 if label == "Gap at net interest rate" else 1)
+        if label == "Gap at net interest rate":
+            assert page.evaluate("Chart.getChart('compareChart').data.datasets[1].pointRadius") == 6
     # Scenario edits flow into the chart, reset restores it
     group.get_by_role("button", name="Fiscal gap", exact=True).click()
     page.wait_for_timeout(200)
@@ -428,7 +436,7 @@ def test_country_labels_are_not_clipped(browser, base_url):
     result = page.evaluate("""async () => {
         await document.fonts.ready;
         const out = {};
-        for (const id of ['compareChart', 'driversChart']) {
+        for (const id of ['compareChart', 'driversChart', 'mechanicsChart']) {
             const ch = Chart.getChart(id), ctx = ch.ctx;
             ctx.save(); ctx.font = '12px Inter, sans-serif';
             const need = Math.max(...ch.data.labels.map(l => ctx.measureText(l).width));
@@ -438,5 +446,149 @@ def test_country_labels_are_not_clipped(browser, base_url):
         return out;
     }""")
     assert all(room >= 0 for room in result.values()), result
+    assert problems == []
+    page.close()
+
+
+def test_full_mechanics_chart_measures_and_scenario(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    group = page.locator("[aria-label='Fiscal data measure']")
+    labels = group.locator("button").all_inner_texts()
+    assert labels == ["Debt", "Primary balance", "Nominal growth", "10Y yield", "r − g"]
+    for label in labels:
+        group.get_by_role("button", name=label, exact=True).click()
+        page.wait_for_timeout(150)
+        state = page.evaluate("""() => {
+            const d = window._dashboardReady;
+            const chart = Chart.getChart('mechanicsChart');
+            const metric = d.currentMechanicsMetric;
+            const expected = d.allCountries.map(c => metric.value(c)).sort((a, b) => b - a);
+            return {
+                n: chart.data.datasets[0].data.length,
+                values: chart.data.datasets[0].data,
+                colours: chart.data.datasets[0].backgroundColor,
+                expected,
+                selected: d.mechanicsMetric,
+            };
+        }""")
+        assert state["n"] == N
+        assert state["values"] == state["expected"]
+        for value, colour in zip(state["values"], state["colours"]):
+            assert colour == ("#1D9E75" if value >= 0 else "#E95C6B")
+    group.get_by_role("button", name="10Y yield", exact=True).click()
+    before = page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()")
+    page.locator("#yield-shift").fill("50")
+    page.wait_for_timeout(200)
+    assert page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()") != before
+    page.locator("button", has_text="Reset to published data").first.click()
+    page.wait_for_timeout(200)
+    assert page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()") == before
+    assert problems == []
+    page.close()
+
+
+def test_country_bar_charts_share_dimensions_and_drivers_use_tight_axis(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""() => {
+        const heights = ['compareChart', 'driversChart', 'mechanicsChart']
+          .map(id => document.getElementById(id).parentElement.getBoundingClientRect().height);
+        const chart = Chart.getChart('driversChart');
+        const drivers = chart.data.datasets.slice(0, 4);
+        const negative = Math.min(...chart.data.labels.map((_, i) =>
+          drivers.reduce((sum, dataset) => sum + Math.min(dataset.data[i], 0), 0)));
+        const positive = Math.max(...chart.data.labels.map((_, i) =>
+          drivers.reduce((sum, dataset) => sum + Math.max(dataset.data[i], 0), 0)));
+        return {
+            heights,
+            leftPad: negative - chart.options.scales.x.min,
+            rightPad: chart.options.scales.x.max - positive,
+        };
+    }""")
+    assert max(result["heights"]) - min(result["heights"]) < 1
+    assert 0 <= result["leftPad"] <= 0.6
+    assert 0 <= result["rightPad"] <= 0.6
+    assert problems == []
+    page.close()
+
+
+def test_executive_momentum_is_generated_from_comparisons(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    strongest = page.evaluate("""() => {
+        const d = window._dashboardReady;
+        const expected = [...d.allCountries].sort((a, b) => b.fiscal_gap - a.fiscal_gap)[0];
+        const card = d.executiveCards.find(c => c.label === 'Strongest fiscal position');
+        return { value: card.value, expected: expected.name, note: card.note };
+    }""")
+    assert strongest["value"] == strongest["expected"]
+    assert "pp fiscal gap" in strongest["note"]
+    for label, key in (("1 month", "1M"), ("6 months", "6M"), ("1 year", "1Y")):
+        page.get_by_role("button", name=label, exact=True).click()
+        page.wait_for_timeout(200)
+        state = page.evaluate("""key => {
+            const d = window._dashboardReady;
+            const rows = d.allCountries.map(c => ({ name: c.name, change: d.changeForPeriod(c, key) }))
+              .filter(r => r.change).sort((a, b) => b.change.net - a.change.net);
+            return {
+              selected: d.momentumPeriod,
+              improved: d.momentumLeaders.improved.country.name,
+              worsened: d.momentumLeaders.worsened.country.name,
+              expectedImproved: rows[0].name,
+              expectedWorsened: rows[rows.length - 1].name,
+            };
+        }""", key)
+        assert state["selected"] == key
+        assert state["improved"] == state["expectedImproved"]
+        assert state["worsened"] == state["expectedWorsened"]
+    assert problems == []
+    page.close()
+
+
+def test_mobile_decision_view_fits_phone(browser, base_url):
+    page = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    problems = []
+    page.on("console", lambda m: problems.append(f"{m.type}: {m.text}")
+            if m.type in ("error", "warning") else None)
+    page.on("pageerror", lambda e: problems.append(f"pageerror: {e}"))
+    page.goto(base_url + "/index.html")
+    page.wait_for_load_state("networkidle")
+    assert page.get_by_role("button", name="Decision view", exact=True).get_attribute("aria-pressed") == "true"
+    assert page.locator("#countries .mobile-country-card").count() == N
+    assert page.locator("#fiscal-table").is_hidden()
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.locator(".theme-toggle").is_visible()
+    assert problems == []
+    page.close()
+
+
+def test_every_table_measure_sorts_both_directions(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""() => {
+        const d = window._dashboardReady;
+        const ordered = (values, direction) => values.every((value, i) => {
+            if (i === 0) return true;
+            const previous = values[i - 1];
+            if (value == null) return true;
+            if (previous == null) return false;
+            if (typeof value === 'string') {
+                const comparison = previous.localeCompare(value);
+                return direction === 'asc' ? comparison <= 0 : comparison >= 0;
+            }
+            return direction === 'asc' ? previous <= value : previous >= value;
+        });
+        return d.tableSortOptions.map(option => {
+            d.setTableSort(option.key);
+            const firstDirection = d.tableSortDirection;
+            const first = d.sortedTableCountries.map(c => d.tableSortValue(c, option.key));
+            d.toggleTableSortDirection();
+            const secondDirection = d.tableSortDirection;
+            const second = d.sortedTableCountries.map(c => d.tableSortValue(c, option.key));
+            return {
+                key: option.key,
+                first: ordered(first, firstDirection),
+                second: ordered(second, secondDirection),
+            };
+        });
+    }""")
+    assert all(item["first"] and item["second"] for item in result), result
     assert problems == []
     page.close()

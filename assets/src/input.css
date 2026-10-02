@@ -53,6 +53,136 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+/* The decision table keeps only the measures needed for a first reading.
+   Full mechanics remains available without maintaining a second table. */
+.table-summary .detail-col {
+  display: none;
+}
+
+.decision-label {
+  display: none;
+}
+
+.table-summary {
+  table-layout: fixed;
+}
+
+.table-summary .column-groups,
+.table-summary .full-label,
+.table-summary .full-only,
+.table-summary .decision-hide {
+  display: none;
+}
+
+.table-summary .decision-label {
+  display: inline;
+}
+
+.table-summary th:not(.detail-col),
+.table-summary td:not(.detail-col) {
+  width: 20%;
+}
+
+.table-summary tbody td {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+.sort-header {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sort-header:hover,
+.sort-header:focus-visible {
+  color: #0891b2;
+  background: rgba(8, 145, 178, 0.06);
+  outline: none;
+}
+
+.dark .sort-header:hover,
+.dark .sort-header:focus-visible {
+  color: #22d3ee;
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.sort-mark {
+  display: inline-block;
+  min-width: 0.75rem;
+  color: #0891b2;
+  font-weight: 700;
+}
+
+.dark .sort-mark {
+  color: #22d3ee;
+}
+
+/* Subtle source and calculation bands replace heavy underline rules in
+   grouped table headers. Adjacent colours make each span unambiguous. */
+.group-band {
+  border-top: 2px solid transparent;
+}
+
+.group-imf {
+  color: #6d5bd0;
+  background: rgba(127, 119, 221, 0.10);
+  border-top-color: #7f77dd;
+}
+
+.group-market {
+  color: #b54722;
+  background: rgba(216, 90, 48, 0.10);
+  border-top-color: #d85a30;
+}
+
+.group-debt {
+  color: #087f8c;
+  background: rgba(24, 167, 184, 0.10);
+  border-top-color: #18a7b8;
+}
+
+.group-trend {
+  color: #287a5e;
+  background: rgba(29, 158, 117, 0.10);
+  border-top-color: #1d9e75;
+}
+
+.group-threshold {
+  color: #9a6700;
+  background: rgba(239, 159, 39, 0.12);
+  border-top-color: #ef9f27;
+}
+
+.dark .group-imf {
+  color: #c4b5fd;
+  background: rgba(127, 119, 221, 0.14);
+}
+
+.dark .group-market {
+  color: #fdba9a;
+  background: rgba(216, 90, 48, 0.14);
+}
+
+.dark .group-debt {
+  color: #67e8f9;
+  background: rgba(24, 167, 184, 0.14);
+}
+
+.dark .group-trend {
+  color: #6ee7b7;
+  background: rgba(29, 158, 117, 0.14);
+}
+
+.dark .group-threshold {
+  color: #fcd34d;
+  background: rgba(239, 159, 39, 0.14);
+}
+
 /* Dark scrollbar */
 .dark ::-webkit-scrollbar {
   height: 6px;
@@ -345,4 +475,40 @@ input[type=range]::-moz-range-thumb {
 
 .theme-toggle:hover {
   background: #e2e8f0;
+}
+
+/* Mobile browser ergonomics, including iOS safe areas and touch targets. */
+@supports (padding: max(0px)) {
+  header > div,
+  #freshness-status > div,
+  main,
+  footer > div {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (max-width: 639px) {
+  button,
+  select,
+  input[type=range] {
+    touch-action: manipulation;
+  }
+
+  .theme-toggle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .glass-card {
+    border-radius: 14px;
+  }
+
+  .editable-cell::after {
+    opacity: 0.65;
+  }
 }

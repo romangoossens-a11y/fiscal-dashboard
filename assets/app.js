@@ -42,6 +42,7 @@ function dashboard() {
   let _chart = null;    // stored outside Alpine proxy so assignments persist
   let _drivers = null;  // the "what moved the gap" chart, same reason
   let _compare = null;  // the country comparison chart, same reason
+  let _mechanics = null; // full mechanics measures by country
   return {
     // State
     drivers: DRIVERS,
@@ -61,7 +62,12 @@ function dashboard() {
     imfBridge: {},
     nextYear: {},
     period: '1M',
+    momentumPeriod: '1M',
     metric: 'gap',
+    mechanicsMetric: 'debt',
+    tableView: 'summary',
+    tableSortKey: 'fiscal_gap',
+    tableSortDirection: 'desc',
     yieldShift: 0,
     selectedCountry: null,
     editingCell: null,
@@ -115,6 +121,95 @@ function dashboard() {
         { key: 'unsustainable', label: 'Debt ratio rising (gap < 0)', dot: 'bg-rose-500', countries: this.unsustainableCountries },
       ].filter(g => g.countries.length > 0);
     },
+    get tableSortOptions() {
+      return [
+        { key: 'name', label: 'Country' },
+        { key: 'debt', label: 'Debt' },
+        { key: 'pb', label: 'Primary balance' },
+        { key: 'g', label: 'Nominal growth' },
+        { key: 'r', label: '10Y yield' },
+        { key: 'r_g', label: 'r − g' },
+        { key: 'pb_star', label: 'Balance needed' },
+        { key: 'fiscal_gap', label: 'Fiscal gap' },
+        { key: 'effective_gap', label: 'Gap at net rate' },
+        { key: 'change', label: 'Recent change' },
+        { key: 'breakeven', label: 'Breakeven yield' },
+        { key: 'cushion', label: 'Yield cushion' },
+      ];
+    },
+    get tableSortLabel() {
+      return this.tableSortOptions.find(o => o.key === this.tableSortKey)?.label || 'Fiscal gap';
+    },
+    get sortedTableCountries() {
+      return [...this.allCountries].sort((a, b) => {
+        const av = this.tableSortValue(a, this.tableSortKey);
+        const bv = this.tableSortValue(b, this.tableSortKey);
+        if (av === null || av === undefined) return 1;
+        if (bv === null || bv === undefined) return -1;
+        const comparison = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
+        return this.tableSortDirection === 'asc' ? comparison : -comparison;
+      });
+    },
+    tableSortValue(c, key) {
+      if (key === 'name') return c.name;
+      if (key === 'effective_gap') return this.gapEffective(c);
+      if (key === 'change') return this.change(c)?.net ?? null;
+      if (key === 'breakeven') return this.breakeven(c);
+      if (key === 'cushion') return this.cushionBp(c);
+      return c[key];
+    },
+    sortTable(key) {
+      if (this.tableSortKey === key) {
+        this.tableSortDirection = this.tableSortDirection === 'desc' ? 'asc' : 'desc';
+      } else {
+        this.tableSortKey = key;
+        this.tableSortDirection = key === 'name' ? 'asc' : 'desc';
+      }
+    },
+    setTableSort(key) {
+      if (!this.tableSortOptions.some(o => o.key === key)) return;
+      this.tableSortKey = key;
+      this.tableSortDirection = key === 'name' ? 'asc' : 'desc';
+    },
+    toggleTableSortDirection() {
+      this.tableSortDirection = this.tableSortDirection === 'desc' ? 'asc' : 'desc';
+    },
+    sortMark(key) {
+      if (this.tableSortKey !== key) return '';
+      return this.tableSortDirection === 'desc' ? '↓' : '↑';
+    },
+    get executiveCards() {
+      if (!this.allCountries.length) return [];
+      const n = this.allCountries.length;
+      const strongest = [...this.allCountries].sort((a, b) => b.fiscal_gap - a.fiscal_gap)[0];
+      const weakest = [...this.allCountries].sort((a, b) => a.fiscal_gap - b.fiscal_gap)[0];
+      const refinancing = this.allCountries
+        .filter(c => typeof c.r_eff === 'number')
+        .map(c => ({ c, pressure: this.gapEffective(c) - c.fiscal_gap }))
+        .sort((a, b) => b.pressure - a.pressure)[0];
+      return [
+        {
+          label: 'Debt ratio rising', value: this.unsustainableCountries.length + ' of ' + n,
+          note: 'At current 10Y yields', tone: 'rose',
+        },
+        {
+          label: 'Strongest fiscal position', value: strongest.name,
+          note: this.fmtSigned(strongest.fiscal_gap) + ' pp fiscal gap',
+          tone: strongest.fiscal_gap >= 0 ? 'emerald' : 'amber',
+        },
+        {
+          label: 'Weakest fiscal gap', value: weakest.name,
+          note: this.fmtSigned(weakest.fiscal_gap) + ' pp of GDP', tone: 'rose',
+        },
+        refinancing ? {
+          label: 'Refinancing pressure', value: refinancing.c.name,
+          note: this.fmt(refinancing.pressure) + ' pp still to come', tone: 'violet',
+        } : {
+          label: 'IMF vintage', value: this.imfLabel || 'Current release',
+          note: 'Forecast data', tone: 'cyan',
+        },
+      ];
+    },
 
     // ── Comparison periods available in the data, in display order
     get periods() {
@@ -123,6 +218,25 @@ function dashboard() {
     },
     get reference() {
       return this.comparisons?.[this.period] || null;
+    },
+    get momentumPeriods() {
+      const labels = { '1M': '1 month', '6M': '6 months', '1Y': '1 year' };
+      return Object.keys(labels).filter(k => this.comparisons?.[k]?.countries)
+        .map(k => ({ key: k, label: labels[k] }));
+    },
+    get momentumReference() {
+      return this.comparisons?.[this.momentumPeriod] || null;
+    },
+    get momentumCaption() {
+      const ref = this.momentumReference;
+      return ref ? 'Since ' + this.dateLabel(ref.date) : 'No earlier snapshot available';
+    },
+    get momentumLeaders() {
+      const rows = this.allCountries.map(c => ({ country: c, change: this.changeForPeriod(c, this.momentumPeriod) }))
+        .filter(r => r.change)
+        .sort((a, b) => b.change.net - a.change.net);
+      if (!rows.length) return { improved: null, worsened: null };
+      return { improved: rows[0], worsened: rows[rows.length - 1] };
     },
     // What the change column and chart compare with, in market terms
     get periodCaption() {
@@ -267,6 +381,7 @@ function dashboard() {
       if (_chart) { _chart.destroy(); _chart = null; }
       if (_drivers) { _drivers.destroy(); _drivers = null; }
       if (_compare) { _compare.destroy(); _compare = null; }
+      if (_mechanics) { _mechanics.destroy(); _mechanics = null; }
       this.updateChart();
       this.updateDrivers();
     },
@@ -395,11 +510,32 @@ function dashboard() {
       parts.net = gapWith(keys) - gapWith([]);
       return parts;
     },
-    change(c) {
-      const then = this.reference?.countries?.[c.iso3];
+    changeForPeriod(c, period) {
+      const then = this.comparisons?.[period]?.countries?.[c.iso3];
       const keys = ['r', 'real_growth', 'deflator', 'pb', 'debt'];
       if (!then || keys.some(k => typeof then[k] !== 'number' || typeof c[k] !== 'number')) return null;
       return this.decompose(then, c);
+    },
+    change(c) {
+      return this.changeForPeriod(c, this.period);
+    },
+    setMomentumPeriod(key) {
+      if (this.momentumPeriods.some(p => p.key === key)) this.momentumPeriod = key;
+    },
+    momentumDriver(row) {
+      if (!row?.change || Math.abs(row.change.net) < CHANGE_THRESHOLD) return null;
+      const sign = Math.sign(row.change.net);
+      return DRIVERS.reduce((best, d) =>
+        row.change[d.key] * sign > (best ? row.change[best.key] * sign : 0) ? d : best, null);
+    },
+    momentumExplanation(row) {
+      const driver = this.momentumDriver(row);
+      if (!driver) return 'Broadly unchanged across the main drivers.';
+      const contribution = row.change[driver.key];
+      const total = DRIVERS.reduce((sum, d) => sum + Math.abs(row.change[d.key]), 0);
+      const share = total ? Math.abs(contribution) / total : 0;
+      const lead = share > 0.75 ? 'Mainly ' : share > 0.45 ? 'Led by ' : 'Partly from ';
+      return lead + DRIVER_PHRASES[driver.key][contribution >= 0 ? '1' : '-1'] + '.';
     },
     // Largest contribution pushing in the direction of the net change
     mainDriver(c) {
@@ -422,7 +558,7 @@ function dashboard() {
         { key: 'cushion', label: 'Yield cushion', unit: 'bp', digits: 0, value: c => this.cushionBp(c),
           note: 'How far the 10Y yield can rise before the debt ratio starts rising. Negative: the yield is already above that level.' },
         { key: 'net', label: 'Gap at net interest rate', unit: 'pp of GDP', digits: 1, value: c => this.gapEffective(c),
-          note: 'Fiscal gap at the net interest rate on the whole debt stock. The hollow marker is the headline gap at the 10Y yield. The distance between them is the refinancing pressure still to come.' },
+          note: 'Fiscal gap at the net interest rate on the whole debt stock. The filled reference dot shows the headline gap at the 10Y yield.' },
       ];
       return list.filter(m => m.key !== 'net' || this.hasEffective);
     },
@@ -433,6 +569,43 @@ function dashboard() {
       this.metric = key;
       try { localStorage.setItem('metric', key); } catch (e) { /* storage blocked */ }
       this.updateComparison();
+    },
+    get mechanicsMetrics() {
+      return [
+        {
+          key: 'debt', label: 'Debt', unit: '% GDP', digits: 1, value: c => c.debt,
+          note: 'General government gross debt at the end of ' + this.debtYearText + ', ranked from highest to lowest.',
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: false,
+        },
+        {
+          key: 'pb', label: 'Primary balance', unit: '% GDP', digits: 1, value: c => c.pb,
+          note: 'General government primary balance for ' + (this.yearText || 'the forecast year') + '. Positive values are surpluses.',
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: true,
+        },
+        {
+          key: 'g', label: 'Nominal growth', unit: '%', digits: 1, value: c => c.g,
+          note: 'IMF nominal GDP growth for ' + (this.yearText || 'the forecast year') + ', combining real growth and the GDP deflator.',
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: false,
+        },
+        {
+          key: 'r', label: '10Y yield', unit: '%', digits: 1, value: c => c.r,
+          note: 'Average 10Y government bond yield for ' + this.monthText + '.',
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: false,
+        },
+        {
+          key: 'r_g', label: 'r − g', unit: 'pp', digits: 1, value: c => c.r_g,
+          note: '10Y yield minus nominal growth. Negative values are more favourable for debt dynamics.',
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: true,
+        },
+      ];
+    },
+    get currentMechanicsMetric() {
+      return this.mechanicsMetrics.find(m => m.key === this.mechanicsMetric) || this.mechanicsMetrics[0];
+    },
+    setMechanicsMetric(key) {
+      if (!this.mechanicsMetrics.some(m => m.key === key)) return;
+      this.mechanicsMetric = key;
+      this.updateMechanics();
     },
     updateComparison() {
       const canvas = document.getElementById('compareChart');
@@ -449,14 +622,14 @@ function dashboard() {
       const pos = isDark ? '#34d399' : '#059669', neg = isDark ? '#f87171' : '#dc2626';
       const f = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(m.digits);
       const datasets = [{
-        label: m.label, data: rows.map(r => r.v), barThickness: 18, order: 2,
+        label: m.label, data: rows.map(r => r.v), barThickness: 16, order: 2,
         backgroundColor: rows.map(r => (r.v >= 0 ? pos : neg)),
       }];
       if (m.key === 'net') {
         datasets.push({
           type: 'line', label: 'Fiscal gap at the 10Y yield', data: rows.map(r => r.headline), indexAxis: 'y',
-          showLine: false, pointStyle: 'circle', pointRadius: 6, pointHoverRadius: 7,
-          backgroundColor: 'transparent', borderColor: ink, borderWidth: 2, order: 1,
+          showLine: false, pointStyle: 'circle', pointRadius: 6, pointHoverRadius: 7, pointHitRadius: 8,
+          backgroundColor: ink, borderColor: isDark ? '#0f172a' : '#ffffff', borderWidth: 2.5, order: 1,
         });
       }
       const all = rows.flatMap(r => (m.key === 'net' ? [r.v, r.headline] : [r.v]));
@@ -464,8 +637,9 @@ function dashboard() {
       const base = m.key === 'cushion' ? 50 : 0.5;
       // Tick step and axis range on the same grid, so the axis never starts on an odd value
       const step = span > 12 * base ? base * 4 : span > 6 * base ? base * 2 : base;
-      // Room for the value labels: about 15% of the span beyond each end
-      const pad = Math.max(span * 0.15, base);
+      // Room for the value labels. Phones need a little more so the most
+      // negative label stays clear of the country name axis.
+      const pad = Math.max(span * (canvas.clientWidth < 430 ? 0.25 : 0.15), base);
       const xs = { min: Math.floor((Math.min(0, ...all) - pad) / step) * step, max: Math.ceil((Math.max(0, ...all) + pad) / step) * step };
       const data = { labels: rows.map(r => r.name), datasets };
       if (_compare) {
@@ -855,6 +1029,145 @@ function dashboard() {
       });
     },
 
+    // ── Full mechanics measures from the table, one comparable measure at
+    // a time. Scenario edits flow through because the chart reads the same
+    // country objects as the table.
+    updateMechanics() {
+      const canvas = document.getElementById('mechanicsChart');
+      if (!canvas || typeof Chart === 'undefined' || !this.allCountries.length) return;
+      const m = this.currentMechanicsMetric;
+      const rows = this.allCountries
+        .map(c => ({ name: c.name, value: m.value(c) }))
+        .filter(row => typeof row.value === 'number' && !isNaN(row.value))
+        .sort((a, b) => b.value - a.value);
+      const isDark = document.documentElement.classList.contains('dark');
+      const ink = isDark ? '#f1f5f9' : '#0f172a';
+      const tick = isDark ? '#94a3b8' : '#64748b';
+      const grid = isDark ? 'rgba(100,116,139,0.15)' : 'rgba(148,163,184,0.15)';
+      const values = rows.map(row => row.value);
+      const low = Math.min(0, ...values);
+      const high = Math.max(0, ...values);
+      const span = Math.max(high - low, 1);
+      const roughStep = span / 6;
+      const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+      const normalised = roughStep / magnitude;
+      const step = (normalised <= 1 ? 1 : normalised <= 2 ? 2 : normalised <= 5 ? 5 : 10) * magnitude;
+      const allPositive = values.every(value => value >= 0);
+      const allNegative = values.every(value => value <= 0);
+      const compact = canvas.clientWidth < 430;
+      const pad = allPositive
+        ? Math.max(span * (compact ? 0.20 : 0.10), step * (compact ? 1 : 0.5))
+        : Math.max(span * (compact ? 0.25 : 0.15), step);
+      const xs = {
+        min: allPositive ? 0 : Math.floor((low - pad) / step) * step,
+        max: allNegative ? 0 : Math.ceil((high + pad) / step) * step,
+      };
+      const colour = value => typeof m.color === 'function' ? m.color(value) : m.color;
+      const data = {
+        labels: rows.map(row => row.name),
+        datasets: [{
+          label: m.label,
+          data: values,
+          backgroundColor: values.map(colour),
+          borderRadius: 3,
+          barThickness: 16,
+        }],
+      };
+      if (_mechanics) {
+        _mechanics.data = data;
+        Object.assign(_mechanics.options.scales.x, xs);
+        _mechanics.options.scales.x.ticks.stepSize = step;
+        _mechanics.options.scales.x.title.text = m.label + ', ' + m.unit;
+        _mechanics.options.plugins.valueDigits = m.digits;
+        _mechanics.options.plugins.valueSigned = m.signed;
+        _mechanics.update('none');
+        return;
+      }
+      const valueLabel = {
+        id: 'mechanicsValueLabel',
+        afterDatasetsDraw(chart) {
+          const ds = chart.data.datasets[0];
+          const meta = chart.getDatasetMeta(0);
+          const ctx = chart.ctx;
+          const digits = chart.options.plugins.valueDigits;
+          const signed = chart.options.plugins.valueSigned;
+          ctx.save();
+          ctx.font = '600 12px Inter, sans-serif';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = ink;
+          meta.data.forEach((bar, i) => {
+            const value = ds.data[i];
+            const right = value >= 0;
+            ctx.textAlign = right ? 'left' : 'right';
+            const text = (signed && value > 0 ? '+' : value < 0 ? '−' : '') + Math.abs(value).toFixed(digits);
+            ctx.fillText(text, bar.x + (right ? 8 : -8), bar.y);
+          });
+          ctx.restore();
+        },
+      };
+      const zeroLine = {
+        id: 'mechanicsZeroLine',
+        beforeDatasetsDraw(chart) {
+          const x = chart.scales.x.getPixelForValue(0);
+          const area = chart.chartArea;
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.strokeStyle = isDark ? 'rgba(241,245,249,0.45)' : 'rgba(15,23,42,0.4)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, area.top);
+          ctx.lineTo(x, area.bottom);
+          ctx.stroke();
+          ctx.restore();
+        },
+      };
+      _mechanics = new Chart(canvas, {
+        type: 'bar',
+        data,
+        plugins: [zeroLine, valueLabel],
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 250 },
+          layout: { padding: { left: 8, right: 8 } },
+          plugins: {
+            legend: { display: false },
+            valueDigits: m.digits,
+            valueSigned: m.signed,
+            tooltip: {
+              callbacks: {
+                label: context => context.dataset.label + ': ' + context.raw.toFixed(this.currentMechanicsMetric.digits) + ' ' + this.currentMechanicsMetric.unit,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ...xs,
+              grid: { color: grid },
+              border: { display: false },
+              ticks: {
+                color: tick,
+                stepSize: step,
+                font: { family: 'Inter', size: 11 },
+                callback(value) {
+                  const signed = this.chart.options.plugins.valueSigned;
+                  return (signed && value > 0 ? '+' : value < 0 ? '−' : '') + Math.abs(value);
+                },
+              },
+              title: { display: true, text: m.label + ', ' + m.unit, color: tick, font: { family: 'Inter', size: 11 } },
+            },
+            y: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { color: tick, autoSkip: false, font: { family: 'Inter', size: 12 } },
+            },
+          },
+        },
+      });
+      document.fonts?.ready.then(() => _mechanics && _mechanics.update('none'));
+    },
+
     // ── "What moved the fiscal gap": stacked contributions per country with
     // a dot for the net change.
     updateDrivers() {
@@ -862,6 +1175,7 @@ function dashboard() {
       // drivers chart, and the comparison chart must follow them.
       if (_compare) _compare.options.plugins.valueDigits = this.currentMetric.digits;
       this.updateComparison();
+      this.updateMechanics();
       const canvas = document.getElementById('driversChart');
       if (!canvas || typeof Chart === 'undefined') return;
       const rows = this.allCountries
@@ -883,9 +1197,11 @@ function dashboard() {
         showLine: false, pointStyle: 'circle', pointRadius: 7, pointHoverRadius: 8,
         backgroundColor: ink, borderColor: bg, borderWidth: 2.5, order: 1,
       });
-      const neg = Math.min(-0.5, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.min(r.ch[d.key], 0), 0)));
-      const pos = Math.max(0.5, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.max(r.ch[d.key], 0), 0)));
-      const xs = { min: Math.floor((neg - 0.6) * 2) / 2, max: Math.ceil((pos + 0.7) * 2) / 2 };
+      const neg = Math.min(-0.25, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.min(r.ch[d.key], 0), 0)));
+      const pos = Math.max(0.25, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.max(r.ch[d.key], 0), 0)));
+      const span = pos - neg;
+      const pad = Math.max(0.10, span * 0.10);
+      const xs = { min: Math.floor((neg - pad) * 2) / 2, max: Math.ceil((pos + pad) * 2) / 2 };
       const data = { labels: rows.map(r => r.name), datasets };
 
       if (_drivers) {
