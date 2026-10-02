@@ -20,7 +20,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=f4d3e934"></script>
+  <script defer src="assets/app.js?v=9bc8f096"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -108,7 +108,7 @@
       <a href="#drivers" class="px-3 py-2 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Drivers</a>
       <a href="#imf-revisions" class="px-3 py-2 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">IMF revisions</a>
       <a href="#trajectory" class="px-3 py-2 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Debt path</a>
-      <a href="#mechanics-comparison" class="px-3 py-2 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Inputs</a>
+      <a href="#mechanics-comparison" class="px-3 py-2 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Fiscal data</a>
     </nav>
 
     <!-- ── Scenario notice ── -->
@@ -214,7 +214,7 @@
               <span class="flex items-center gap-1.5" x-show="metric === 'net'">
                 <span class="w-3 h-3 rounded-full inline-block bg-slate-900 dark:bg-slate-100 ring-2 ring-white dark:ring-slate-900"></span>Fiscal gap at the 10Y yield</span>
             </div>
-            <div class="relative" :style="'height: ' + (allCountries.length * 34 + 60) + 'px'">
+            <div class="relative" :style="'height: ' + (allCountries.length * 42 + 70) + 'px'">
               <canvas id="compareChart" role="img" :aria-label="'Countries ranked by ' + currentMetric.label + ', ' + currentMetric.unit"></canvas>
             </div>
           </div>
@@ -742,11 +742,11 @@
     <div id="mechanics-comparison" class="glass-card fade-in scroll-mt-24" style="animation-delay: 0.3s" x-show="allCountries.length > 0">
       <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div class="min-w-0 md:flex-1">
-          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Full Mechanics by Country</h2>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Fiscal Data by Country</h2>
           <p class="text-sm text-slate-700 dark:text-slate-200 mt-1" x-text="currentMechanicsMetric.note"></p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Uses the same values and scenario edits as the Full mechanics table.</p>
         </div>
-        <div class="inline-flex self-start max-w-full rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto text-xs" role="group" aria-label="Full mechanics measure">
+        <div class="inline-flex self-start max-w-full rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto text-xs" role="group" aria-label="Fiscal data measure">
           <template x-for="measure in mechanicsMetrics" :key="measure.key">
             <button type="button" class="px-2.5 py-1.5 transition-colors whitespace-nowrap" @click="setMechanicsMetric(measure.key)"
               :aria-pressed="mechanicsMetric === measure.key"
@@ -756,7 +756,7 @@
         </div>
       </div>
       <div class="p-4 sm:p-6">
-        <div class="relative" :style="'height: ' + (allCountries.length * 34 + 60) + 'px'">
+        <div class="relative" :style="'height: ' + (allCountries.length * 42 + 70) + 'px'">
           <canvas id="mechanicsChart" role="img" :aria-label="'Countries ranked by ' + currentMechanicsMetric.label + ', ' + currentMechanicsMetric.unit"></canvas>
         </div>
       </div>

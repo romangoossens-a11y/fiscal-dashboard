@@ -575,7 +575,7 @@ function dashboard() {
         {
           key: 'debt', label: 'Debt', unit: '% GDP', digits: 1, value: c => c.debt,
           note: 'General government gross debt at the end of ' + this.debtYearText + ', ranked from highest to lowest.',
-          color: '#7F77DD', signed: false,
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: false,
         },
         {
           key: 'pb', label: 'Primary balance', unit: '% GDP', digits: 1, value: c => c.pb,
@@ -585,17 +585,17 @@ function dashboard() {
         {
           key: 'g', label: 'Nominal growth', unit: '%', digits: 1, value: c => c.g,
           note: 'IMF nominal GDP growth for ' + (this.yearText || 'the forecast year') + ', combining real growth and the GDP deflator.',
-          color: '#18A7B8', signed: false,
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: false,
         },
         {
           key: 'r', label: '10Y yield', unit: '%', digits: 1, value: c => c.r,
           note: 'Average 10Y government bond yield for ' + this.monthText + '.',
-          color: '#D85A30', signed: false,
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: false,
         },
         {
           key: 'r_g', label: 'r − g', unit: 'pp', digits: 1, value: c => c.r_g,
           note: '10Y yield minus nominal growth. Negative values are more favourable for debt dynamics.',
-          color: value => value <= 0 ? '#1D9E75' : '#E95C6B', signed: true,
+          color: value => value >= 0 ? '#1D9E75' : '#E95C6B', signed: true,
         },
       ];
     },
@@ -622,7 +622,7 @@ function dashboard() {
       const pos = isDark ? '#34d399' : '#059669', neg = isDark ? '#f87171' : '#dc2626';
       const f = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(m.digits);
       const datasets = [{
-        label: m.label, data: rows.map(r => r.v), barThickness: 18, order: 2,
+        label: m.label, data: rows.map(r => r.v), barThickness: 16, order: 2,
         backgroundColor: rows.map(r => (r.v >= 0 ? pos : neg)),
       }];
       if (m.key === 'net') {
@@ -1070,7 +1070,7 @@ function dashboard() {
           data: values,
           backgroundColor: values.map(colour),
           borderRadius: 3,
-          barThickness: 18,
+          barThickness: 16,
         }],
       };
       if (_mechanics) {
@@ -1197,9 +1197,11 @@ function dashboard() {
         showLine: false, pointStyle: 'circle', pointRadius: 7, pointHoverRadius: 8,
         backgroundColor: ink, borderColor: bg, borderWidth: 2.5, order: 1,
       });
-      const neg = Math.min(-0.5, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.min(r.ch[d.key], 0), 0)));
-      const pos = Math.max(0.5, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.max(r.ch[d.key], 0), 0)));
-      const xs = { min: Math.floor((neg - 0.6) * 2) / 2, max: Math.ceil((pos + 0.7) * 2) / 2 };
+      const neg = Math.min(-0.25, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.min(r.ch[d.key], 0), 0)));
+      const pos = Math.max(0.25, ...rows.map(r => DRIVERS.reduce((s, d) => s + Math.max(r.ch[d.key], 0), 0)));
+      const span = pos - neg;
+      const pad = Math.max(0.10, span * 0.10);
+      const xs = { min: Math.floor((neg - pad) * 2) / 2, max: Math.ceil((pos + pad) * 2) / 2 };
       const data = { labels: rows.map(r => r.name), datasets };
 
       if (_drivers) {

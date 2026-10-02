@@ -85,7 +85,9 @@ Tick items off as they land.
 - [x] Full width horizontal momentum strip and full width country ranking
 - [x] Outlined cyan reference tick replaces hollow dots in the net interest view, without a connector line
 - [x] Debt trajectory placed before IMF revisions in the reading order
-- [x] Final full mechanics comparison chart for debt, primary balance, nominal growth, the 10Y yield and r minus g
+- [x] Final Fiscal Data by Country chart for debt, primary balance, nominal growth, the 10Y yield and r minus g
+- [x] Consistent chart height, bar thickness and positive or negative colours across country bar charts
+- [x] Tighter dynamic driver axis so short horizon moves use the available width
 - [x] Filled fiscal gap reference dot in the net interest ranking, with a contrasting outline
 - [x] Colour band hierarchy for grouped headers in both analytical tables
 - [x] Remove the Antigravity framework credit from the footer

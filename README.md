@@ -14,7 +14,7 @@ Based on the framework from the Antigravity Macro Research November 2025 report.
 3. **What moved the fiscal gap**: the change in each country's gap split into the 10Y yield, real growth, GDP deflator and fiscal stance, with a dot for the net change.
 4. **How the IMF changed its view**: current year primary balance and projected debt change, previous IMF release versus the latest, with a verdict.
 5. **Debt trajectory simulation**: a ten year debt path for a selected country against the IMF forecast. It appears before the IMF revisions table so the debt mechanism is clear before the slower moving vintage comparison.
-6. **Full mechanics by country**: a final ranked bar chart for debt, primary balance, nominal growth, the 10Y yield and r minus g. It uses the same values and scenario edits as the table.
+6. **Fiscal data by country**: a final ranked bar chart for debt, primary balance, nominal growth, the 10Y yield and r minus g. It uses the same values and scenario edits as the table. Positive values use a consistent green and negative values use rose.
 
 The page is responsive for desktop, Android and iOS. Click any highlighted value in the full mechanics table to edit it, or shift all yields at once. Scenario changes flow through the overview, ranking, table and charts.
 

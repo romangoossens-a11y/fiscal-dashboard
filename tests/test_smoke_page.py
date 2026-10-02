@@ -452,7 +452,7 @@ def test_country_labels_are_not_clipped(browser, base_url):
 
 def test_full_mechanics_chart_measures_and_scenario(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
-    group = page.locator("[aria-label='Full mechanics measure']")
+    group = page.locator("[aria-label='Fiscal data measure']")
     labels = group.locator("button").all_inner_texts()
     assert labels == ["Debt", "Primary balance", "Nominal growth", "10Y yield", "r − g"]
     for label in labels:
@@ -466,12 +466,15 @@ def test_full_mechanics_chart_measures_and_scenario(browser, base_url):
             return {
                 n: chart.data.datasets[0].data.length,
                 values: chart.data.datasets[0].data,
+                colours: chart.data.datasets[0].backgroundColor,
                 expected,
                 selected: d.mechanicsMetric,
             };
         }""")
         assert state["n"] == N
         assert state["values"] == state["expected"]
+        for value, colour in zip(state["values"], state["colours"]):
+            assert colour == ("#1D9E75" if value >= 0 else "#E95C6B")
     group.get_by_role("button", name="10Y yield", exact=True).click()
     before = page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()")
     page.locator("#yield-shift").fill("50")
@@ -480,6 +483,30 @@ def test_full_mechanics_chart_measures_and_scenario(browser, base_url):
     page.locator("button", has_text="Reset to published data").first.click()
     page.wait_for_timeout(200)
     assert page.evaluate("Chart.getChart('mechanicsChart').data.datasets[0].data.join()") == before
+    assert problems == []
+    page.close()
+
+
+def test_country_bar_charts_share_dimensions_and_drivers_use_tight_axis(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""() => {
+        const heights = ['compareChart', 'driversChart', 'mechanicsChart']
+          .map(id => document.getElementById(id).parentElement.getBoundingClientRect().height);
+        const chart = Chart.getChart('driversChart');
+        const drivers = chart.data.datasets.slice(0, 4);
+        const negative = Math.min(...chart.data.labels.map((_, i) =>
+          drivers.reduce((sum, dataset) => sum + Math.min(dataset.data[i], 0), 0)));
+        const positive = Math.max(...chart.data.labels.map((_, i) =>
+          drivers.reduce((sum, dataset) => sum + Math.max(dataset.data[i], 0), 0)));
+        return {
+            heights,
+            leftPad: negative - chart.options.scales.x.min,
+            rightPad: chart.options.scales.x.max - positive,
+        };
+    }""")
+    assert max(result["heights"]) - min(result["heights"]) < 1
+    assert 0 <= result["leftPad"] <= 0.6
+    assert 0 <= result["rightPad"] <= 0.6
     assert problems == []
     page.close()
 
