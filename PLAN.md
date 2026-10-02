@@ -78,11 +78,12 @@ Tick items off as they land.
 - [x] One month, six month and one year fiscal momentum leaders with generated driver explanations
 - [x] Country ranking moved into the overview and duplicate chart removed
 - [x] Decision view by default, with the full mechanics table preserved
+- [x] Equal width decision columns and highest or lowest sorting for every table measure
 - [x] Mobile country cards, touch sized controls and iOS safe area support
 - [x] Section navigation and a single global scenario notice
 - [x] Detailed interpretation retained in a collapsible panel
 - [x] Full width horizontal momentum strip and full width country ranking
-- [x] Cyan reference tick and connector replace hollow dots in the net interest view
+- [x] Outlined cyan reference tick replaces hollow dots in the net interest view, without a connector line
 - [x] Debt trajectory placed before IMF revisions in the reading order
 - [x] Cadence aware freshness line, with IMF releases treated as semiannual
 - [x] Refresh schedule strengthened to Monday and Thursday at 08:17 UTC

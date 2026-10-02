@@ -83,7 +83,7 @@ def test_row_click_selects_country(browser, base_url):
     page.locator("#fiscal-table tbody tr", has_text="Japan").click()
     page.wait_for_timeout(300)
     assert page.evaluate("window._dashboardReady.selectedCountry.iso3") == "JPN"
-    assert page.locator("select").input_value() == "JPN"
+    assert page.locator("#trajectory-country").input_value() == "JPN"
     assert problems == []
     page.close()
 
@@ -324,10 +324,10 @@ def test_theme_toggle_and_country_select(browser, base_url):
     page.locator(".theme-toggle").click()
     assert page.evaluate("!!Chart.getChart('driversChart') && !!Chart.getChart('debtChart')")
     before = chart_state(page)
-    page.locator("select").select_option("JPN")
+    page.locator("#trajectory-country").select_option("JPN")
     page.wait_for_timeout(300)
     assert chart_state(page) != before
-    assert "Japan" in page.locator("select").locator("option:checked").inner_text()
+    assert "Japan" in page.locator("#trajectory-country option:checked").inner_text()
     assert problems == []
     page.close()
 
@@ -487,9 +487,43 @@ def test_mobile_decision_view_fits_phone(browser, base_url):
     page.goto(base_url + "/index.html")
     page.wait_for_load_state("networkidle")
     assert page.get_by_role("button", name="Decision view", exact=True).get_attribute("aria-pressed") == "true"
-    assert page.locator("#countries .sm\\:hidden button").count() == N
+    assert page.locator("#countries .mobile-country-card").count() == N
     assert page.locator("#fiscal-table").is_hidden()
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     assert page.locator(".theme-toggle").is_visible()
+    assert problems == []
+    page.close()
+
+
+def test_every_table_measure_sorts_both_directions(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    result = page.evaluate("""() => {
+        const d = window._dashboardReady;
+        const ordered = (values, direction) => values.every((value, i) => {
+            if (i === 0) return true;
+            const previous = values[i - 1];
+            if (value == null) return true;
+            if (previous == null) return false;
+            if (typeof value === 'string') {
+                const comparison = previous.localeCompare(value);
+                return direction === 'asc' ? comparison <= 0 : comparison >= 0;
+            }
+            return direction === 'asc' ? previous <= value : previous >= value;
+        });
+        return d.tableSortOptions.map(option => {
+            d.setTableSort(option.key);
+            const firstDirection = d.tableSortDirection;
+            const first = d.sortedTableCountries.map(c => d.tableSortValue(c, option.key));
+            d.toggleTableSortDirection();
+            const secondDirection = d.tableSortDirection;
+            const second = d.sortedTableCountries.map(c => d.tableSortValue(c, option.key));
+            return {
+                key: option.key,
+                first: ordered(first, firstDirection),
+                second: ordered(second, secondDirection),
+            };
+        });
+    }""")
+    assert all(item["first"] and item["second"] for item in result), result
     assert problems == []
     page.close()

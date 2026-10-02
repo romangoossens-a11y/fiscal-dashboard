@@ -63,6 +63,65 @@ html {
   display: none;
 }
 
+.decision-label {
+  display: none;
+}
+
+.table-summary {
+  table-layout: fixed;
+}
+
+.table-summary .column-groups,
+.table-summary .full-label,
+.table-summary .full-only,
+.table-summary .decision-hide {
+  display: none;
+}
+
+.table-summary .decision-label {
+  display: inline;
+}
+
+.table-summary th:not(.detail-col),
+.table-summary td:not(.detail-col) {
+  width: 20%;
+}
+
+.table-summary tbody td {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+.sort-header {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sort-header:hover,
+.sort-header:focus-visible {
+  color: #0891b2;
+  background: rgba(8, 145, 178, 0.06);
+  outline: none;
+}
+
+.dark .sort-header:hover,
+.dark .sort-header:focus-visible {
+  color: #22d3ee;
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.sort-mark {
+  display: inline-block;
+  min-width: 0.75rem;
+  color: #0891b2;
+  font-weight: 700;
+}
+
+.dark .sort-mark {
+  color: #22d3ee;
+}
+
 /* Dark scrollbar */
 .dark ::-webkit-scrollbar {
   height: 6px;

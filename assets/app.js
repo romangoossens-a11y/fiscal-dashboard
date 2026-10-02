@@ -64,6 +64,8 @@ function dashboard() {
     momentumPeriod: '1M',
     metric: 'gap',
     tableView: 'summary',
+    tableSortKey: 'fiscal_gap',
+    tableSortDirection: 'desc',
     yieldShift: 0,
     selectedCountry: null,
     editingCell: null,
@@ -116,6 +118,63 @@ function dashboard() {
         { key: 'sustainable', label: 'Debt ratio stable or falling (gap ≥ 0)', dot: 'bg-emerald-500', countries: this.sustainableCountries },
         { key: 'unsustainable', label: 'Debt ratio rising (gap < 0)', dot: 'bg-rose-500', countries: this.unsustainableCountries },
       ].filter(g => g.countries.length > 0);
+    },
+    get tableSortOptions() {
+      return [
+        { key: 'name', label: 'Country' },
+        { key: 'debt', label: 'Debt' },
+        { key: 'pb', label: 'Primary balance' },
+        { key: 'g', label: 'Nominal growth' },
+        { key: 'r', label: '10Y yield' },
+        { key: 'r_g', label: 'r − g' },
+        { key: 'pb_star', label: 'Balance needed' },
+        { key: 'fiscal_gap', label: 'Fiscal gap' },
+        { key: 'effective_gap', label: 'Gap at net rate' },
+        { key: 'change', label: 'Recent change' },
+        { key: 'breakeven', label: 'Breakeven yield' },
+        { key: 'cushion', label: 'Yield cushion' },
+      ];
+    },
+    get tableSortLabel() {
+      return this.tableSortOptions.find(o => o.key === this.tableSortKey)?.label || 'Fiscal gap';
+    },
+    get sortedTableCountries() {
+      return [...this.allCountries].sort((a, b) => {
+        const av = this.tableSortValue(a, this.tableSortKey);
+        const bv = this.tableSortValue(b, this.tableSortKey);
+        if (av === null || av === undefined) return 1;
+        if (bv === null || bv === undefined) return -1;
+        const comparison = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
+        return this.tableSortDirection === 'asc' ? comparison : -comparison;
+      });
+    },
+    tableSortValue(c, key) {
+      if (key === 'name') return c.name;
+      if (key === 'effective_gap') return this.gapEffective(c);
+      if (key === 'change') return this.change(c)?.net ?? null;
+      if (key === 'breakeven') return this.breakeven(c);
+      if (key === 'cushion') return this.cushionBp(c);
+      return c[key];
+    },
+    sortTable(key) {
+      if (this.tableSortKey === key) {
+        this.tableSortDirection = this.tableSortDirection === 'desc' ? 'asc' : 'desc';
+      } else {
+        this.tableSortKey = key;
+        this.tableSortDirection = key === 'name' ? 'asc' : 'desc';
+      }
+    },
+    setTableSort(key) {
+      if (!this.tableSortOptions.some(o => o.key === key)) return;
+      this.tableSortKey = key;
+      this.tableSortDirection = key === 'name' ? 'asc' : 'desc';
+    },
+    toggleTableSortDirection() {
+      this.tableSortDirection = this.tableSortDirection === 'desc' ? 'asc' : 'desc';
+    },
+    sortMark(key) {
+      if (this.tableSortKey !== key) return '';
+      return this.tableSortDirection === 'desc' ? '↓' : '↑';
     },
     get executiveCards() {
       if (!this.allCountries.length) return [];
@@ -496,7 +555,7 @@ function dashboard() {
         { key: 'cushion', label: 'Yield cushion', unit: 'bp', digits: 0, value: c => this.cushionBp(c),
           note: 'How far the 10Y yield can rise before the debt ratio starts rising. Negative: the yield is already above that level.' },
         { key: 'net', label: 'Gap at net interest rate', unit: 'pp of GDP', digits: 1, value: c => this.gapEffective(c),
-          note: 'Fiscal gap at the net interest rate on the whole debt stock. The cyan tick shows the headline gap at the 10Y yield and the connector shows the refinancing pressure still to come.' },
+          note: 'Fiscal gap at the net interest rate on the whole debt stock. The outlined cyan tick shows the headline gap at the 10Y yield.' },
       ];
       return list.filter(m => m.key !== 'net' || this.hasEffective);
     },
@@ -591,21 +650,20 @@ function dashboard() {
           const xScale = chart.scales.x;
           const ctx = chart.ctx;
           ctx.save();
-          ctx.strokeStyle = accent;
           ctx.lineCap = 'round';
           bars.forEach((bar, i) => {
             const headlineX = xScale.getPixelForValue(values[i]);
-            ctx.globalAlpha = 0.4;
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = isDark ? '#0f172a' : '#ffffff';
+            ctx.lineWidth = 7;
             ctx.beginPath();
-            ctx.moveTo(bar.x, bar.y);
-            ctx.lineTo(headlineX, bar.y);
+            ctx.moveTo(headlineX, bar.y - 8);
+            ctx.lineTo(headlineX, bar.y + 8);
             ctx.stroke();
-            ctx.globalAlpha = 1;
+            ctx.strokeStyle = accent;
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(headlineX, bar.y - 7);
-            ctx.lineTo(headlineX, bar.y + 7);
+            ctx.moveTo(headlineX, bar.y - 8);
+            ctx.lineTo(headlineX, bar.y + 8);
             ctx.stroke();
           });
           ctx.restore();
