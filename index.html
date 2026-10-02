@@ -20,7 +20,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=9bc8f096"></script>
+  <script defer src="assets/app.js?v=c7b3a928"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -52,7 +52,7 @@
           <span>Sources: FRED · OECD · IMF</span>
           <span class="px-2 py-0.5 rounded-md text-[10px] font-medium"
             :class="isStale ? 'text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60' : 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800'"
-            :title="isStale ? 'The weekly refresh has not run for more than 10 days' : 'Date of the last data refresh'">
+            :title="isStale ? 'The scheduled refresh has not run for more than 10 days' : 'Date of the last data refresh'">
             <span x-text="(isStale ? 'Stale, ' : 'Data as of ') + (lastUpdated ? dateLabel(lastUpdated) : '—')"></span>
           </span>
         </div>

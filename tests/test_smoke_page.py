@@ -360,7 +360,7 @@ def test_gap_at_net_interest_rate(browser, base_url):
     result = page.evaluate("""() => {
         const d = window._dashboardReady;
         const before = d.allCountries.map(c => [c.iso3, d.gapEffective(c)]);
-        d.setYieldShift(50);  // market move: headline gap changes, average rate does not
+        d.setYieldShift(50);  // market move: headline gap changes, net interest rate does not
         const after = Object.fromEntries(d.allCountries.map(c => [c.iso3, d.gapEffective(c)]));
         return { missing: before.filter(([, v]) => v === null).length,
                  moved: before.filter(([iso, v]) => Math.abs(after[iso] - v) > 1e-9).length };

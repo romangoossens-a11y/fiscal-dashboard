@@ -8,7 +8,7 @@ downloaded from imf.org through a browser (imf.org refuses scripts).
 
 1. IMF archive. April 2019 to April 2025 are read from the weo{apr,oct}YYYYall.xls
    files in --weo-dir. October 2025 comes from its SDMX vintage dataflow and
-   the current release from the SDMX "WEO" dataflow, the same source the weekly
+   the current release from the SDMX "WEO" dataflow, the same source the scheduled
    run uses, so the next run recognises it as unchanged.
 
 2. History. One "reconstructed" entry per month end from --start to the last

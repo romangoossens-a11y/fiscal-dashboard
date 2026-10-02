@@ -56,6 +56,8 @@ npm install
 npm run build
 ```
 
+For agent assisted maintenance, start with `AGENTS.md`, then read `CLAUDE.md` for the full technical context. Material visual changes should be reviewed locally before merging. Pull requests and branch protection are optional for this single maintainer repository, so the full local test and build checks are required before a direct merge to `main`.
+
 ## Countries
 
 Spain · Switzerland · Italy · Japan · Canada · United Kingdom · Germany · United States · France · Australia
@@ -78,6 +80,8 @@ fiscal-dashboard/
 ├── tests/                    ← offline tests (pytest)
 ├── requirements.txt
 ├── .github/workflows/
-│   └── update_data.yml       ← weekly auto-refresh
-└── CLAUDE.md                 ← AI session context
+│   ├── update_data.yml       ← Monday and Thursday data refresh
+│   └── tests.yml             ← branch, pull request, browser and asset checks
+├── AGENTS.md                 ← coding agent entry point and maintenance rules
+└── CLAUDE.md                 ← detailed architecture and AI session context
 ```

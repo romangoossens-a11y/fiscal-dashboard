@@ -874,8 +874,9 @@ function dashboard() {
     },
     // Why the simple projection and the IMF path differ in the forecast year.
     // Debt identity: d_t = d_(t-1) / (1 + g) + interest_t - pb_t + other flows.
-    // The simple projection charges r on the whole stock and uses real growth
-    // plus CPI. The IMF uses its own net interest and nominal GDP growth.
+    // The simple projection charges r on the whole stock and uses nominal
+    // growth derived from real growth and the GDP deflator. The IMF bridge uses
+    // its own net interest and nominal GDP growth.
     get bridge() {
       const c = this.selectedCountry;
       const b = c && this.imfBridge?.[c.iso3];

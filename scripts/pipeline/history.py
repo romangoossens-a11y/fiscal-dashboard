@@ -8,7 +8,7 @@ Each entry stores the inputs and the resulting fiscal gap per country:
 
 Debt is at the end of the year before target_year, like the live table.
 
-"live" entries are written by the weekly run. "reconstructed" entries were
+"live" entries are written by the scheduled run. "reconstructed" entries were
 rebuilt by scripts/backfill.py from FRED and archived IMF releases, one per
 month end, using the previous month's average yield.
 """
@@ -28,7 +28,7 @@ def load(path=HISTORY_FILE):
 
 def save(history, path=HISTORY_FILE):
     history["entries"].sort(key=lambda e: e["date"])
-    # One entry per line keeps weekly diffs readable.
+    # One entry per line keeps scheduled refresh diffs readable.
     lines = [json.dumps(e, separators=(",", ":")) for e in history["entries"]]
     body = ",\n  ".join(lines)
     path.write_text('{"entries": [\n  ' + body + "\n]}\n", encoding="utf-8")

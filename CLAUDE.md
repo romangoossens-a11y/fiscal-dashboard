@@ -5,7 +5,7 @@ Fiscal Sustainability Dashboard for ten advanced economies, built for Antigravit
 
 **Live URL:** https://romangoossens-a11y.github.io/fiscal-dashboard/
 **GitHub repo:** https://github.com/romangoossens-a11y/fiscal-dashboard
-**Local URL:** http://localhost:8743/index.html (run `python -m http.server 8743` in this folder)
+**Local preview:** run `python -m http.server 8744` in this folder, then open `http://localhost:8744/index.html`. Any free local port is acceptable
 
 ## Tech Stack
 - `index.html` (markup), `assets/app.js` (Alpine component), `assets/app.css` (compiled Tailwind)
@@ -14,6 +14,12 @@ Fiscal Sustainability Dashboard for ten advanced economies, built for Antigravit
 - Data: `data/fiscal_data.js` (loaded via script tag, works file://) + `data/fiscal_data.json` (fetched via http://)
 - Python pipeline: `scripts/fetch_data.py` (FRED monthly yields, IMF SDMX API)
 - Hosting: GitHub Pages. Automatic data refresh runs every Monday and Thursday at 08:17 UTC through GitHub Actions. Monday is the normal update and Thursday is the recovery run
+
+## Maintenance Workflow
+* `AGENTS.md` is the Codex entry point and links back to this detailed context
+* For material work, use a review branch, run the full tests and build, then obtain visual approval before merging. Push only after explicit approval
+* Pull requests and branch protection are optional because this is a single maintainer repository. The local review and verification steps therefore cannot be skipped
+* `.github/workflows/tests.yml` runs for pull requests and non-main branch pushes. It deliberately does not replace the mandatory local test and build checks before a direct merge to `main`
 
 ## Key Technical Notes
 - **Chart instance** stored as closure variable `let _chart = null` inside `dashboard()` — NOT as Alpine reactive data. Alpine's proxy doesn't reliably persist assignments from outside event handlers (root cause of chart not updating bug).
@@ -47,7 +53,7 @@ python -m pytest -q
 - Large debt revisions get a generated note (`validate.debt_revision_note`) saying whether the previous year moved too (revised history) or not (new outlook). It updates with every release
 - **Debt is end of previous year** (`debt_year` = forecast year minus 1), as in d_t = d_(t-1) x (1 + r) / (1 + g) - pb_t. History uses the same definition. `config.field_year()` maps each IMF field to its year
 - **No dates, release names, country counts or current country conclusions in the markup.** Every year, month, IMF release, executive indicator, momentum leader and explanation is built in `assets/app.js` from the data, with a neutral fallback when a field is missing. The key messages are generated sentences that drop out when their inputs are missing. Browser tests check the page with blocks removed, with an old schema, and with shifted years
-- `npm run build` stamps asset links in `index.html` with a content hash (`?v=`), so a deploy cannot mix a new page with cached old scripts
+- `npm run build` stamps asset links in `index.html` with a content hash (`?v=`), so a deploy cannot mix a new page with cached old scripts. Commit the generated `assets/app.css` and stamped `index.html`
 - `r_eff` per country: IMF net interest (primary minus overall balance) x (1 + g) / debt at end of last year. Shown as "Gap at net interest rate" (the term "average rate" was dropped as unclear) next to the headline gap at the 10Y yield. It changes only with IMF releases, not with the yield shift. Gap at average rate is close to the IMF's projected fall in the debt ratio excluding other flows, a useful check
 - Fiscal gap uses a single forecast year on purpose (decided 1 Oct 2026): averaging would hide sensitivity
 - The executive overview is the first reading layer. `executiveCards` generates the four headline indicators, including the highest fiscal gap as the strongest fiscal position and the lowest fiscal gap as the weakest. `momentumLeaders` ranks `changeForPeriod()` over one month, six months or one year. `momentumExplanation()` uses the same Shapley contributions and driver phrases as the detailed drivers section. It identifies the largest contribution in the direction of the net move
@@ -59,6 +65,13 @@ python -m pytest -q
 - Country ranking chart (`updateComparison`): one measure at a time, fiscal gap, yield cushion or gap at net interest rate, ranked. It refreshes whenever the drivers chart does
 - Adding a country: add it to `COUNTRY_NAMES` and `YIELD_SERIES` in `config.py`, then rerun `scripts/backfill.py --weo-dir ... --fresh-history` and `fetch_data.py`. The page (count in the header, chart heights) and the tests follow the data
 - See `PLAN.md` for decisions and the roadmap
+
+## Troubleshooting
+* A blank page or missing chart: check the browser console, `loadError`, script order and whether `data/fiscal_data.js` defines `window.FISCAL_DATA`
+* Stale styling or JavaScript after a change: run `npm run build` and reload the content hashed page
+* A delayed refresh: inspect the latest `Update Fiscal Data` GitHub Actions run, then check `data_status` and country `flags` before changing fallback behaviour
+* A formula or chart mismatch: run the full test suite and confirm matching Python and JavaScript implementations, especially `dynamics.decompose()` and `decompose()`
+* A value that did not refresh: preserve the last good value and its flag. Never replace it with a blank merely to make the workflow pass
 
 ## Fiscal Framework (Nominal Terms)
 - `g = (1 + real_growth)(1 + deflator) - 1` (nominal GDP growth)
