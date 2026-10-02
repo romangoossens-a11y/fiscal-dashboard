@@ -38,8 +38,11 @@ def browser():
     with sync_api.sync_playwright() as p:
         try:
             b = p.chromium.launch()
-        except Exception as exc:  # noqa: BLE001
-            pytest.skip(f"Chromium not available: {exc}")
+        except Exception as bundled_exc:  # noqa: BLE001
+            try:
+                b = p.chromium.launch(channel="chrome")
+            except Exception as system_exc:  # noqa: BLE001
+                pytest.skip(f"Chromium not available: {bundled_exc}; system Chrome: {system_exc}")
         yield b
         b.close()
 
@@ -268,6 +271,7 @@ def test_cell_edit_then_reset_restores_everything(browser, base_url):
     message = page.locator("#key-messages li").first.inner_text()
 
     # Edit France's nominal growth in the table
+    page.get_by_role("button", name="Full mechanics", exact=True).click()
     page.locator("#fiscal-table tbody tr", has_text="France").locator(".editable-cell").nth(2).click()
     box = page.locator("#fiscal-table input.table-input")
     box.fill("6.0")
@@ -277,7 +281,7 @@ def test_cell_edit_then_reset_restores_everything(browser, base_url):
     assert chart_state(page) != published_charts
 
     # Reset from the drivers card
-    page.locator("button", has_text="Reset to published data").nth(1).click()
+    page.locator("button", has_text="Reset to published data").first.click()
     page.wait_for_timeout(300)
     assert table_state(page) == published_table
     assert chart_state(page) == published_charts
@@ -360,7 +364,7 @@ def test_gap_at_net_interest_rate(browser, base_url):
                  moved: before.filter(([iso, v]) => Math.abs(after[iso] - v) > 1e-9).length };
     }""")
     assert result == {"missing": 0, "moved": 0}
-    assert "At the net interest rate governments pay on their debt" in page.locator("#key-messages").inner_text()
+    assert "At the net interest rate governments pay on their debt" in page.locator("#key-messages").text_content()
     assert problems == []
     page.close()
 
@@ -438,5 +442,46 @@ def test_country_labels_are_not_clipped(browser, base_url):
         return out;
     }""")
     assert all(room >= 0 for room in result.values()), result
+    assert problems == []
+    page.close()
+
+
+def test_executive_momentum_is_generated_from_comparisons(browser, base_url):
+    page, problems, _ = open_page(browser, base_url)
+    for label, key in (("1 month", "1M"), ("6 months", "6M")):
+        page.get_by_role("button", name=label, exact=True).click()
+        page.wait_for_timeout(200)
+        state = page.evaluate("""key => {
+            const d = window._dashboardReady;
+            const rows = d.allCountries.map(c => ({ name: c.name, change: d.changeForPeriod(c, key) }))
+              .filter(r => r.change).sort((a, b) => b.change.net - a.change.net);
+            return {
+              selected: d.momentumPeriod,
+              improved: d.momentumLeaders.improved.country.name,
+              worsened: d.momentumLeaders.worsened.country.name,
+              expectedImproved: rows[0].name,
+              expectedWorsened: rows[rows.length - 1].name,
+            };
+        }""", key)
+        assert state["selected"] == key
+        assert state["improved"] == state["expectedImproved"]
+        assert state["worsened"] == state["expectedWorsened"]
+    assert problems == []
+    page.close()
+
+
+def test_mobile_decision_view_fits_phone(browser, base_url):
+    page = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    problems = []
+    page.on("console", lambda m: problems.append(f"{m.type}: {m.text}")
+            if m.type in ("error", "warning") else None)
+    page.on("pageerror", lambda e: problems.append(f"pageerror: {e}"))
+    page.goto(base_url + "/index.html")
+    page.wait_for_load_state("networkidle")
+    assert page.get_by_role("button", name="Decision view", exact=True).get_attribute("aria-pressed") == "true"
+    assert page.locator("#countries .sm\\:hidden button").count() == N
+    assert page.locator("#fiscal-table").is_hidden()
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.locator(".theme-toggle").is_visible()
     assert problems == []
     page.close()

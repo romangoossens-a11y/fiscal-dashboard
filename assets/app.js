@@ -61,7 +61,9 @@ function dashboard() {
     imfBridge: {},
     nextYear: {},
     period: '1M',
+    momentumPeriod: '1M',
     metric: 'gap',
+    tableView: 'summary',
     yieldShift: 0,
     selectedCountry: null,
     editingCell: null,
@@ -115,6 +117,40 @@ function dashboard() {
         { key: 'unsustainable', label: 'Debt ratio rising (gap < 0)', dot: 'bg-rose-500', countries: this.unsustainableCountries },
       ].filter(g => g.countries.length > 0);
     },
+    get executiveCards() {
+      if (!this.allCountries.length) return [];
+      const n = this.allCountries.length;
+      const closest = [...this.allCountries]
+        .sort((a, b) => Math.abs(this.cushionBp(a)) - Math.abs(this.cushionBp(b)))[0];
+      const weakest = [...this.allCountries].sort((a, b) => a.fiscal_gap - b.fiscal_gap)[0];
+      const refinancing = this.allCountries
+        .filter(c => typeof c.r_eff === 'number')
+        .map(c => ({ c, pressure: this.gapEffective(c) - c.fiscal_gap }))
+        .sort((a, b) => b.pressure - a.pressure)[0];
+      const cushion = this.cushionBp(closest);
+      return [
+        {
+          label: 'Debt ratio rising', value: this.unsustainableCountries.length + ' of ' + n,
+          note: 'At current 10Y yields', tone: 'rose',
+        },
+        {
+          label: 'Closest to stability', value: closest.name,
+          note: Math.abs(cushion) + ' bp ' + (cushion < 0 ? 'above' : 'below') + ' breakeven',
+          tone: cushion < 0 ? 'amber' : 'emerald',
+        },
+        {
+          label: 'Weakest fiscal gap', value: weakest.name,
+          note: this.fmtSigned(weakest.fiscal_gap) + ' pp of GDP', tone: 'rose',
+        },
+        refinancing ? {
+          label: 'Refinancing pressure', value: refinancing.c.name,
+          note: this.fmt(refinancing.pressure) + ' pp still to come', tone: 'violet',
+        } : {
+          label: 'IMF vintage', value: this.imfLabel || 'Current release',
+          note: 'Forecast data', tone: 'cyan',
+        },
+      ];
+    },
 
     // ── Comparison periods available in the data, in display order
     get periods() {
@@ -123,6 +159,24 @@ function dashboard() {
     },
     get reference() {
       return this.comparisons?.[this.period] || null;
+    },
+    get momentumPeriods() {
+      return ['1M', '6M'].filter(k => this.comparisons?.[k]?.countries)
+        .map(k => ({ key: k, label: k === '1M' ? '1 month' : '6 months' }));
+    },
+    get momentumReference() {
+      return this.comparisons?.[this.momentumPeriod] || null;
+    },
+    get momentumCaption() {
+      const ref = this.momentumReference;
+      return ref ? 'Since ' + this.dateLabel(ref.date) : 'No earlier snapshot available';
+    },
+    get momentumLeaders() {
+      const rows = this.allCountries.map(c => ({ country: c, change: this.changeForPeriod(c, this.momentumPeriod) }))
+        .filter(r => r.change)
+        .sort((a, b) => b.change.net - a.change.net);
+      if (!rows.length) return { improved: null, worsened: null };
+      return { improved: rows[0], worsened: rows[rows.length - 1] };
     },
     // What the change column and chart compare with, in market terms
     get periodCaption() {
@@ -395,11 +449,32 @@ function dashboard() {
       parts.net = gapWith(keys) - gapWith([]);
       return parts;
     },
-    change(c) {
-      const then = this.reference?.countries?.[c.iso3];
+    changeForPeriod(c, period) {
+      const then = this.comparisons?.[period]?.countries?.[c.iso3];
       const keys = ['r', 'real_growth', 'deflator', 'pb', 'debt'];
       if (!then || keys.some(k => typeof then[k] !== 'number' || typeof c[k] !== 'number')) return null;
       return this.decompose(then, c);
+    },
+    change(c) {
+      return this.changeForPeriod(c, this.period);
+    },
+    setMomentumPeriod(key) {
+      if (this.momentumPeriods.some(p => p.key === key)) this.momentumPeriod = key;
+    },
+    momentumDriver(row) {
+      if (!row?.change || Math.abs(row.change.net) < CHANGE_THRESHOLD) return null;
+      const sign = Math.sign(row.change.net);
+      return DRIVERS.reduce((best, d) =>
+        row.change[d.key] * sign > (best ? row.change[best.key] * sign : 0) ? d : best, null);
+    },
+    momentumExplanation(row) {
+      const driver = this.momentumDriver(row);
+      if (!driver) return 'Broadly unchanged across the main drivers.';
+      const contribution = row.change[driver.key];
+      const total = DRIVERS.reduce((sum, d) => sum + Math.abs(row.change[d.key]), 0);
+      const share = total ? Math.abs(contribution) / total : 0;
+      const lead = share > 0.75 ? 'Mainly ' : share > 0.45 ? 'Led by ' : 'Partly from ';
+      return lead + DRIVER_PHRASES[driver.key][contribution >= 0 ? '1' : '-1'] + '.';
     },
     // Largest contribution pushing in the direction of the net change
     mainDriver(c) {
@@ -464,8 +539,9 @@ function dashboard() {
       const base = m.key === 'cushion' ? 50 : 0.5;
       // Tick step and axis range on the same grid, so the axis never starts on an odd value
       const step = span > 12 * base ? base * 4 : span > 6 * base ? base * 2 : base;
-      // Room for the value labels: about 15% of the span beyond each end
-      const pad = Math.max(span * 0.15, base);
+      // Room for the value labels. Phones need a little more so the most
+      // negative label stays clear of the country name axis.
+      const pad = Math.max(span * (canvas.clientWidth < 430 ? 0.25 : 0.15), base);
       const xs = { min: Math.floor((Math.min(0, ...all) - pad) / step) * step, max: Math.ceil((Math.max(0, ...all) + pad) / step) * step };
       const data = { labels: rows.map(r => r.name), datasets };
       if (_compare) {

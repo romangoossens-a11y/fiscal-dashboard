@@ -7,7 +7,7 @@ Tick items off as they land.
 
 | Topic | Decision |
 |---|---|
-| Yields | Monthly averages for all 9 countries. US uses `GS10`, the others the OECD series on FRED. Each value carries its own month. |
+| Yields | Monthly averages for all ten countries. The US uses `GS10`. The other nine use OECD series republished by FRED. Each value carries its own month. |
 | Failure policy | Never stop the job. A value that cannot be refreshed is carried forward and flagged, naming the country, the field, since when and why. |
 | Timeliness at the margin | Breakeven yield, headroom and sensitivity per 10 bp, plus a global yield shift control. No daily feeds and no Bloomberg. |
 | 1Y comparison | The dashboard as it stood a year ago, including the roll to a new fundamentals year. Same year comparisons live in the IMF revisions table. |
@@ -49,7 +49,7 @@ Tick items off as they land.
 - [x] IMF revisions table: current year pb, debt slope revision, verdict chip
 - [x] Breakeven yield, headroom and sensitivity per 10 bp, replacing "Debt 10Y"
 - [x] Global yield shift control
-- [x] Wording: FRED pulse dot, "Unsustainable", G10 title
+- [x] Wording and status labels follow the data
 
 ## Phase 3b. Readability pass
 
@@ -71,3 +71,15 @@ Tick items off as they land.
 - [x] Hover on the fiscal gap with next year's gap at the current yield
 - [x] Country Comparison bar chart with a measure toggle. "Average rate" renamed "net interest rate"
 - [x] Australia added (ten countries). Country count, chart heights and tests follow the data. Debt dynamics equation in the table title
+
+## Phase 3c. Executive and mobile redesign
+
+- [x] Executive overview with four generated decision indicators
+- [x] One month and six month fiscal momentum leaders with generated driver explanations
+- [x] Country ranking moved into the overview and duplicate chart removed
+- [x] Decision view by default, with the full mechanics table preserved
+- [x] Mobile country cards, touch sized controls and iOS safe area support
+- [x] Section navigation and a single global scenario notice
+- [x] Detailed interpretation retained in a collapsible panel
+- [x] Cadence aware freshness line, with IMF releases treated as semiannual
+- [x] Refresh schedule strengthened to Monday and Thursday at 08:17 UTC

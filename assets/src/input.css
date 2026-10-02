@@ -53,6 +53,16 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+/* The decision table keeps only the measures needed for a first reading.
+   Full mechanics remains available without maintaining a second table. */
+.table-summary .detail-col {
+  display: none;
+}
+
 /* Dark scrollbar */
 .dark ::-webkit-scrollbar {
   height: 6px;
@@ -345,4 +355,40 @@ input[type=range]::-moz-range-thumb {
 
 .theme-toggle:hover {
   background: #e2e8f0;
+}
+
+/* Mobile browser ergonomics, including iOS safe areas and touch targets. */
+@supports (padding: max(0px)) {
+  header > div,
+  #freshness-status > div,
+  main,
+  footer > div {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (max-width: 639px) {
+  button,
+  select,
+  input[type=range] {
+    touch-action: manipulation;
+  }
+
+  .theme-toggle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .glass-card {
+    border-radius: 14px;
+  }
+
+  .editable-cell::after {
+    opacity: 0.65;
+  }
 }
