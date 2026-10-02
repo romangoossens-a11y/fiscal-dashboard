@@ -50,6 +50,7 @@ python -m pytest -q
 - `r_eff` per country: IMF net interest (primary minus overall balance) x (1 + g) / debt at end of last year. Shown as "Gap at net interest rate" (the term "average rate" was dropped as unclear) next to the headline gap at the 10Y yield. It changes only with IMF releases, not with the yield shift. Gap at average rate is close to the IMF's projected fall in the debt ratio excluding other flows, a useful check
 - Fiscal gap uses a single forecast year on purpose (decided 1 Oct 2026): averaging would hide sensitivity
 - Country Comparison chart (`updateComparison`): one measure at a time, fiscal gap, yield cushion or gap at net interest rate, ranked. It refreshes whenever the drivers chart does
+- Adding a country: add it to `COUNTRY_NAMES` and `YIELD_SERIES` in `config.py`, then rerun `scripts/backfill.py --weo-dir ... --fresh-history` and `fetch_data.py`. The page (count in the header, chart heights) and the tests follow the data
 - See `PLAN.md` for decisions and the roadmap
 
 ## Fiscal Framework (Nominal Terms)

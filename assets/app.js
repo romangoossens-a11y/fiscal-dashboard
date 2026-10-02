@@ -88,6 +88,13 @@ function dashboard() {
     get periodLabel() {
       return this.periods.find(p => p.key === this.period)?.label || '';
     },
+    // "Ten advanced economies": follows the data, so adding a country
+    // needs no change here.
+    get countText() {
+      const n = this.allCountries.length;
+      const words = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+      return (words[n] || String(n)) + ' advanced ' + (n === 1 ? 'economy' : 'economies');
+    },
     get isScenario() {
       return this.yieldShift !== 0;
     },

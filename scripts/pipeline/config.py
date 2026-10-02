@@ -22,6 +22,7 @@ COUNTRY_NAMES = {
     "DEU": "Germany",
     "USA": "United States",
     "FRA": "France",
+    "AUS": "Australia",
 }
 COUNTRIES = list(COUNTRY_NAMES)
 
@@ -39,6 +40,7 @@ YIELD_SERIES = {
     "ITA": "IRLTLT01ITM156N",
     "ESP": "IRLTLT01ESM156N",
     "CHE": "IRLTLT01CHM156N",
+    "AUS": "IRLTLT01AUM156N",
 }
 
 # IMF WEO indicator codes, keyed by the field name used in the output.

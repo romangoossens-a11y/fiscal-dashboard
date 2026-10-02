@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fiscal Sustainability Dashboard</title>
   <meta name="description"
-    content="Fiscal sustainability of nine advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
+    content="Fiscal sustainability of major advanced economies: fiscal gap, breakeven yields, what moved them and IMF revisions, from FRED and IMF data." />
   <link rel="stylesheet" href="assets/app.css?v=f073bf84" />
   <script>
     // Apply saved theme before paint to avoid flash
@@ -19,7 +19,7 @@
   <!-- Pinned, self-hosted copies (npm run build). Order matters: Alpine last. -->
   <script defer src="assets/vendor/chart.umd.js?v=de315773"></script>
   <script defer src="data/fiscal_data.js"></script>
-  <script defer src="assets/app.js?v=6e42c4e9"></script>
+  <script defer src="assets/app.js?v=ea84dc5b"></script>
   <script defer src="assets/vendor/alpine.min.js?v=23251939"></script>
 </head>
 
@@ -39,7 +39,7 @@
           <span class="text-cyan-600 dark:text-cyan-400">◆</span> Fiscal Sustainability Dashboard
         </h1>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Nine advanced economies &nbsp;·&nbsp; All variables in <strong>nominal terms</strong>
+          <span x-text="allCountries.length ? countText : 'Advanced economies'">Advanced economies</span> &nbsp;·&nbsp; All variables in <strong>nominal terms</strong>
           <span x-show="yearText" x-text="' · ' + imfText + ' forecasts for ' + yearText"></span>
         </p>
       </div>
@@ -95,7 +95,8 @@
     <div class="glass-card fade-in" style="animation-delay: 0.1s" x-show="allCountries.length > 0">
       <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-4">
         <div>
-          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Fiscal Position and Debt Dynamics</h2>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white">Fiscal Position and Debt Dynamics:
+            <span class="font-medium text-cyan-700 dark:text-cyan-400 whitespace-nowrap">change in debt ratio ≈ (r − g) × debt − primary balance</span></h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
             x-text="imfText + ' forecasts' + (yearText ? ' for ' + yearText : '') + ', debt at end ' + debtYearText + ' · 10Y yields: ' + monthText + ' average · Sorted by fiscal gap'"></p>
         </div>
@@ -296,9 +297,10 @@
       <div
         class="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/40 space-y-1">
         <p>
-          <strong>How to read:</strong> balance needed = (r − g) / (1 + g) × debt / 100, with debt at the end of last
-          year. Fiscal gap = primary balance minus
-          balance needed: positive means the debt ratio falls. Breakeven yield is the 10Y yield at which the debt
+          <strong>How to read:</strong> the debt ratio changes by about (r − g) × debt minus the primary balance,
+          with debt at the end of last year. Balance needed = (r − g) × debt: the primary balance that keeps the debt
+          ratio unchanged. Fiscal gap = primary balance minus balance needed: positive means the debt ratio falls.
+          The figures use the exact form, which divides (r − g) × debt by (1 + g). Breakeven yield is the 10Y yield at which the debt
           ratio is stable, and the yield cushion is how far the actual yield is below it. Main driver tags:
           <span class="px-1 rounded bg-orange-100 text-orange-900 dark:bg-orange-950/60 dark:text-orange-200">yields</span> market,
           <span class="px-1 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200">growth</span>,
@@ -351,7 +353,7 @@
           <span class="flex items-center gap-1.5" x-show="metric === 'net'"><span
               class="w-3 h-3 rounded-full inline-block border-2 border-slate-900 dark:border-slate-100"></span>Fiscal gap at the 10Y yield</span>
         </div>
-        <div class="relative" style="height: 400px;">
+        <div class="relative" :style="'height: ' + (allCountries.length * 38 + 70) + 'px'">
           <canvas id="compareChart" role="img"
             :aria-label="'Countries ranked by ' + currentMetric.label + ', ' + currentMetric.unit"></canvas>
         </div>
@@ -409,7 +411,7 @@
               class="w-3 h-3 rounded-full inline-block bg-slate-900 dark:bg-slate-100 ring-2 ring-white dark:ring-slate-900"></span>Net
             change</span>
         </div>
-        <div class="relative" style="height: 440px;">
+        <div class="relative" :style="'height: ' + (allCountries.length * 42 + 70) + 'px'">
           <canvas id="driversChart" role="img"
             aria-label="Change in each country's fiscal gap split into the 10Y yield, real growth, GDP deflator and primary balance and debt, with a dot for the net change"></canvas>
         </div>

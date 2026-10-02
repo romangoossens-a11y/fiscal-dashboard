@@ -12,6 +12,7 @@ RUN = date(2026, 9, 30)
 IMF = {iso: {"real_growth": {"2026": 1.5}, "deflator": {"2026": 2.5},
              "pb": {"2026": -1.0}, "debt": {"2025": 100.0, "2026": 103.0}} for iso in COUNTRIES}
 SERIES_TO_ISO = {s: iso for iso, s in YIELD_SERIES.items()}
+N = len(COUNTRIES)
 
 
 def archive():
@@ -38,7 +39,7 @@ def by_iso(out):
 
 def test_happy_path():
     out = run()
-    assert len(out["countries"]) == 9 and out["data_status"] == []
+    assert len(out["countries"]) == N and out["data_status"] == []
     assert out["imf"]["vintage"] == "Apr2026" and out["imf"]["release_status"] == "unchanged"
     assert out["data_vintage"] == "IMF WEO April 2026 | 10Y yields: monthly averages, Aug 2026"
     c = by_iso(out)["USA"]
@@ -59,7 +60,7 @@ def test_failed_yield_is_carried_forward_and_flagged():
 
     out = run(fetch_yield=flaky, previous=previous)
     jpn = by_iso(out)["JPN"]
-    assert len(out["countries"]) == 9
+    assert len(out["countries"]) == N
     assert jpn["r"] == 4.0
     kinds = [f["kind"] for f in jpn["flags"]]
     assert CARRIED_FORWARD in kinds
@@ -94,12 +95,12 @@ def test_lagging_month_is_flagged():
 def test_imf_falls_back_to_datamapper_then_archive():
     out = run(fetch_sdmx=fail, fetch_dm=lambda: IMF)
     assert out["imf"]["source"] == "IMF DataMapper (fallback)"
-    assert out["imf"]["vintage"] == "Apr2026" and len(out["countries"]) == 9
+    assert out["imf"]["vintage"] == "Apr2026" and len(out["countries"]) == N
     assert any("DataMapper" in s for s in out["data_status"])
 
     out = run(fetch_sdmx=fail, fetch_dm=fail)
     assert out["imf"]["source"] == "IMF release archive (fallback)"
-    assert len(out["countries"]) == 9
+    assert len(out["countries"]) == N
 
 
 def test_missing_imf_field_comes_from_archive():
@@ -120,4 +121,4 @@ def test_new_release_is_archived():
 
 def test_first_run_with_no_data_skips_rather_than_crashes():
     out = run(fetch_yield=fail, fetch_sdmx=fail)
-    assert out["countries"] == [] and len(out["skipped"]) == 9
+    assert out["countries"] == [] and len(out["skipped"]) == N

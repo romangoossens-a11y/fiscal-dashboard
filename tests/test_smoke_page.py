@@ -15,6 +15,8 @@ import pytest
 sync_api = pytest.importorskip("playwright.sync_api")
 
 ROOT = Path(__file__).resolve().parents[1]
+# Number of countries in the published data file
+N = len(__import__("json").loads((ROOT / "data" / "fiscal_data.json").read_text(encoding="utf-8"))["countries"])
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -60,7 +62,7 @@ def open_page(browser, url, route=None):
 def test_page_renders_all_countries(browser, base_url):
     page, problems, external = open_page(browser, base_url)
     rows = page.locator("#fiscal-table tbody tr:not(.section-divider)")
-    assert rows.count() == 9
+    assert rows.count() == N
     assert page.evaluate("typeof Chart !== 'undefined' && !!Chart.getChart('debtChart')")
     assert "IMF WEO" in page.locator("#fiscal-table").locator("xpath=ancestor::div[contains(@class,'glass-card')]").inner_text()
     assert problems == []
@@ -104,7 +106,7 @@ def test_change_column_and_drivers_chart(browser, base_url):
     }""")
     assert set(result["errors"]) >= {"1M", "6M", "1Y"}
     assert all(err < 1e-9 for err in result["errors"].values())
-    assert result["bars"] == 9
+    assert result["bars"] == N
     assert problems == []
     page.close()
 
@@ -127,7 +129,7 @@ def test_yield_shift_moves_gap_by_debt_sensitivity(browser, base_url):
 def test_revisions_table(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
     rows = page.locator("#revisions-table tbody tr")
-    assert rows.count() == 9
+    assert rows.count() == N
     verdicts = set(page.locator("#revisions-table tbody tr td:last-child").all_inner_texts())
     assert verdicts <= {"Improving", "Deteriorating", "Mixed", "Unchanged"}
     assert problems == []
@@ -167,7 +169,7 @@ def visible_text(page):
 def test_page_survives_missing_blocks(browser, base_url, strip):
     payload = {k: v for k, v in real_payload().items() if k not in strip}
     page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
-    assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == 9
+    assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == N
     text = visible_text(page)
     assert not any(bad in text for bad in BAD_TEXT), [b for b in BAD_TEXT if b in text]
     assert page.locator("#key-messages li").count() >= 1
@@ -182,7 +184,7 @@ def test_page_survives_old_schema_countries(browser, base_url):
         for k in ("real_growth", "deflator", "inflation", "r_month", "flags"):
             c.pop(k, None)
     page, problems, _ = open_page(browser, base_url, route=serve_payload(payload))
-    assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == 9
+    assert page.locator("#fiscal-table tbody tr:not(.section-divider)").count() == N
     text = visible_text(page)
     assert not any(bad in text for bad in BAD_TEXT)
     assert problems == []
@@ -339,7 +341,7 @@ def test_next_year_gap_hover(browser, base_url):
     page, problems, _ = open_page(browser, base_url)
     payload_year = real_payload()["projection_year"] + 1
     titles = page.locator("#fiscal-table tbody td[data-col='fiscal-gap']").evaluate_all("els => els.map(e => e.title)")
-    assert len(titles) == 9
+    assert len(titles) == N
     assert all(f"Next year ({payload_year})" in t for t in titles)
     assert not any(bad in " ".join(titles) for bad in BAD_TEXT)
     # The yield shift flows into next year's gap too
@@ -365,7 +367,7 @@ def test_comparison_chart_measures(browser, base_url):
             return { n: values.length, sorted: values.every((v, i) => i === 0 || values[i - 1] >= v),
                      matches: values.every((v, i) => Math.abs(v - expected[i]) < 1e-9), sets: ch.data.datasets.length };
         }""")
-        assert state["n"] == 9 and state["sorted"] and state["matches"], (label, state)
+        assert state["n"] == N and state["sorted"] and state["matches"], (label, state)
         assert state["sets"] == (2 if label == "Gap at net interest rate" else 1)
     # Scenario edits flow into the chart, reset restores it
     group.get_by_role("button", name="Fiscal gap", exact=True).click()

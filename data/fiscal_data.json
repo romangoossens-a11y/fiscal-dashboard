@@ -32,7 +32,7 @@
       "fiscal_gap": 1.78,
       "sustainable": true,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01ESM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01ESM156N",
       "flags": [],
       "r_eff": 2.47
     },
@@ -50,7 +50,7 @@
       "fiscal_gap": 0.85,
       "sustainable": true,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01CHM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01CHM156N",
       "flags": [],
       "r_eff": 0.305
     },
@@ -68,7 +68,7 @@
       "fiscal_gap": -0.58,
       "sustainable": false,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01CAM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01CAM156N",
       "flags": [],
       "r_eff": 0.224
     },
@@ -86,9 +86,27 @@
       "fiscal_gap": -0.75,
       "sustainable": false,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01ITM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01ITM156N",
       "flags": [],
       "r_eff": 2.707
+    },
+    {
+      "name": "Australia",
+      "iso3": "AUS",
+      "debt": 51.0,
+      "r": 5.01,
+      "g": 5.68,
+      "real_growth": 2.01,
+      "deflator": 3.6,
+      "r_g": -0.67,
+      "pb": -1.34,
+      "pb_star": -0.32,
+      "fiscal_gap": -1.02,
+      "sustainable": false,
+      "r_month": "2026-08",
+      "r_source": "FRED CSV (no API key) IRLTLT01AUM156N",
+      "flags": [],
+      "r_eff": 2.265
     },
     {
       "name": "Germany",
@@ -104,7 +122,7 @@
       "fiscal_gap": -2.67,
       "sustainable": false,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01DEM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01DEM156N",
       "flags": [],
       "r_eff": 1.551
     },
@@ -122,7 +140,7 @@
       "fiscal_gap": -2.93,
       "sustainable": false,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01GBM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01GBM156N",
       "flags": [],
       "r_eff": 2.7
     },
@@ -140,7 +158,7 @@
       "fiscal_gap": -3.36,
       "sustainable": false,
       "r_month": "2026-09",
-      "r_source": "FRED API GS10",
+      "r_source": "FRED CSV (no API key) GS10",
       "flags": [],
       "r_eff": 3.257
     },
@@ -158,7 +176,7 @@
       "fiscal_gap": -3.47,
       "sustainable": false,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01JPM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01JPM156N",
       "flags": [
         {
           "field": "debt",
@@ -182,7 +200,7 @@
       "fiscal_gap": -4.72,
       "sustainable": false,
       "r_month": "2026-08",
-      "r_source": "FRED API IRLTLT01FRM156N",
+      "r_source": "FRED CSV (no API key) IRLTLT01FRM156N",
       "flags": [],
       "r_eff": 1.965
     }
@@ -275,6 +293,15 @@
           "pb": -2.71,
           "debt": 116.0,
           "fiscal_gap": -4.55
+        },
+        "AUS": {
+          "r": 4.92,
+          "r_month": "2026-07",
+          "real_growth": 2.01,
+          "deflator": 3.6,
+          "pb": -1.34,
+          "debt": 51.0,
+          "fiscal_gap": -0.97
         }
       }
     },
@@ -365,6 +392,15 @@
           "pb": -3.59,
           "debt": 116.5,
           "fiscal_gap": -4.66
+        },
+        "AUS": {
+          "r": 4.76,
+          "r_month": "2026-02",
+          "real_growth": 2.15,
+          "deflator": 3.0,
+          "pb": -1.31,
+          "debt": 51.0,
+          "fiscal_gap": -1.08
         }
       }
     },
@@ -455,6 +491,15 @@
           "pb": -3.39,
           "debt": 113.1,
           "fiscal_gap": -4.92
+        },
+        "AUS": {
+          "r": 4.28,
+          "r_month": "2025-08",
+          "real_growth": 1.63,
+          "deflator": 1.87,
+          "pb": -1.43,
+          "debt": 49.8,
+          "fiscal_gap": -1.79
         }
       }
     },
@@ -545,6 +590,15 @@
           "pb": -3.59,
           "debt": 116.5,
           "fiscal_gap": -4.66
+        },
+        "AUS": {
+          "r": 4.76,
+          "r_month": "2026-02",
+          "real_growth": 2.15,
+          "deflator": 3.0,
+          "pb": -1.31,
+          "debt": 51.0,
+          "fiscal_gap": -1.08
         }
       }
     }
@@ -660,6 +714,17 @@
         "debt_level_change": -0.513,
         "debt_level_note": null,
         "verdict": "improving"
+      },
+      "AUS": {
+        "pb_old": -1.308,
+        "pb_new": -1.341,
+        "pb_change": -0.033,
+        "debt_slope_old": -1.678,
+        "debt_slope_new": -1.359,
+        "debt_slope_change": 0.319,
+        "debt_level_change": -0.002,
+        "debt_level_note": null,
+        "verdict": "unchanged"
       }
     }
   },
@@ -744,6 +809,15 @@
       "2029": 121.342,
       "2030": 121.18,
       "2031": 120.736
+    },
+    "AUS": {
+      "2025": 51.035,
+      "2026": 50.645,
+      "2027": 50.657,
+      "2028": 50.541,
+      "2029": 50.206,
+      "2030": 49.676,
+      "2031": 49.124
     }
   },
   "imf_bridge": {
@@ -800,6 +874,12 @@
       "imf_debt": 118.404,
       "net_interest": 2.23,
       "nominal_growth": 2.228
+    },
+    "AUS": {
+      "year": 2026,
+      "imf_debt": 50.645,
+      "net_interest": 1.093,
+      "nominal_growth": 5.682
     }
   },
   "next_year": {
@@ -864,6 +944,13 @@
       "deflator": 1.46,
       "pb": -2.308,
       "debt": 118.404,
+      "year": 2027
+    },
+    "AUS": {
+      "real_growth": 1.698,
+      "deflator": 2.524,
+      "pb": -1.038,
+      "debt": 50.645,
       "year": 2027
     }
   }

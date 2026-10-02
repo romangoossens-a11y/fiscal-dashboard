@@ -70,3 +70,4 @@ Tick items off as they land.
 - [x] Fiscal gap at the IMF average interest rate next to the headline gap (option 3, no toggle). Single forecast year kept, no averaging
 - [x] Hover on the fiscal gap with next year's gap at the current yield
 - [x] Country Comparison bar chart with a measure toggle. "Average rate" renamed "net interest rate"
+- [x] Australia added (ten countries). Country count, chart heights and tests follow the data. Debt dynamics equation in the table title
