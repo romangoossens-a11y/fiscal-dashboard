@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "last_updated": "2026-10-19",
+  "last_updated": "2026-10-22",
   "data_vintage": "IMF WEO October 2026 | 10Y yields: monthly averages, Sep 2026",
   "projection_year": 2026,
   "debt_year": 2025,
@@ -16,7 +16,9 @@
     "latest_month": "2026-09",
     "typical_month": "2026-09"
   },
-  "data_status": [],
+  "data_status": [
+    "Italy r: Latest monthly yield is Aug 2026, Sep 2026 not yet published"
+  ],
   "countries": [
     {
       "name": "Spain",
@@ -87,7 +89,13 @@
       "sustainable": false,
       "r_month": "2026-08",
       "r_source": "FRED API IRLTLT01ITM156N",
-      "flags": [],
+      "flags": [
+        {
+          "field": "r",
+          "kind": "lagging",
+          "message": "Latest monthly yield is Aug 2026, Sep 2026 not yet published"
+        }
+      ],
       "r_eff": 2.933
     },
     {
