@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "last_updated": "2026-11-02",
+  "last_updated": "2026-11-05",
   "data_vintage": "IMF WEO October 2026 | 10Y yields: monthly averages, Sep 2026",
   "projection_year": 2026,
   "debt_year": 2025,
@@ -13,7 +13,7 @@
   },
   "yields": {
     "definition": "Monthly average 10Y government bond yield. US: FRED GS10. Others: OECD long term interest rates via FRED.",
-    "latest_month": "2026-09",
+    "latest_month": "2026-10",
     "typical_month": "2026-09"
   },
   "data_status": [
@@ -174,16 +174,16 @@
       "name": "United States",
       "iso3": "USA",
       "debt": 124.4,
-      "r": 4.99,
+      "r": 5.13,
       "g": 5.77,
       "real_growth": 2.33,
       "deflator": 3.37,
-      "r_g": -0.78,
+      "r_g": -0.64,
       "pb": -4.92,
-      "pb_star": -0.92,
-      "fiscal_gap": -4.01,
+      "pb_star": -0.75,
+      "fiscal_gap": -4.17,
       "sustainable": false,
-      "r_month": "2026-09",
+      "r_month": "2026-10",
       "r_source": "FRED API GS10",
       "flags": [],
       "r_eff": 3.078
@@ -209,7 +209,7 @@
   ],
   "comparisons": {
     "1M": {
-      "date": "2026-10-02",
+      "date": "2026-10-05",
       "kind": "live",
       "imf_vintage": "Apr2026",
       "target_year": 2026,
