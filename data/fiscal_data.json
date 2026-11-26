@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "last_updated": "2026-11-23",
+  "last_updated": "2026-11-26",
   "data_vintage": "IMF WEO October 2026 | 10Y yields: monthly averages, Oct 2026",
   "projection_year": 2026,
   "debt_year": 2025,
@@ -201,7 +201,7 @@
   ],
   "comparisons": {
     "1M": {
-      "date": "2026-10-22",
+      "date": "2026-10-26",
       "kind": "live",
       "imf_vintage": "Oct2026",
       "target_year": 2026,
